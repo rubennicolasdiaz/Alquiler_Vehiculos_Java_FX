@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.*?>
+<AnchorPane prefHeight="600.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/19"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.rubennicolas.alquilervehiculos.vista.grafica.controllers.ControllerVistaVehiculos">
+    <children>
+        <Button fx:id="buttonAdd" layoutX="29.0" layoutY="107.0" mnemonicParsing="false" onAction="#addVehiculo"
+                prefHeight="39.0" prefWidth="205.0" text="Añadir">
+            <font>
+                <Font size="18.0"/>
+            </font>
+        </Button>
+        <TableView fx:id="tablaVehiculos"
+                   layoutX="269.0" layoutY="66.0"
+                   onMouseClicked="#seleccionar"
+                   maxHeight="450.0" prefHeight="500"
+                   maxWidth="900.0" prefWidth="900.0">
+
+            <columns>
+                <TableColumn fx:id="colTipoVehiculo" text="Tipo"/>
+                <TableColumn fx:id="colMarca" text="Marca"/>
+                <TableColumn fx:id="colModelo" text="Modelo"/>
+                <TableColumn fx:id="colMatricula" text="Matricula"/>
+                <TableColumn fx:id="colCilindrada" text="Cilindrada"/>
+                <TableColumn fx:id="colNumPlazas" text="Numero Plazas"/>
+                <TableColumn fx:id="colNumPma" text="PMA"/>
+            </columns>
+
+            <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+            </columnResizePolicy>
+        </TableView>
+        <Button fx:id="buttonEdit" layoutX="29.0" layoutY="168.0" mnemonicParsing="false" onAction="#editVehiculo"
+                prefHeight="39.0" prefWidth="205.0" text="Modificar">
+            <font>
+                <Font size="18.0"/>
+            </font>
+        </Button>
+        <Button fx:id="buttonDelete" layoutX="29.0" layoutY="294.0" mnemonicParsing="false" onAction="#deleteVehiculo"
+                prefHeight="39.0" prefWidth="205.0" text="Eliminar">
+            <font>
+                <Font size="18.0"/>
+            </font>
+        </Button>
+        <Label layoutX="21.0" layoutY="14.0" prefHeight="71.0" maxWidth="200.0" text="Gestión de Vehículos">
+            <font>
+                <Font size="19.0"/>
+            </font>
+        </Label>
+        <Button fx:id="buttonBack" layoutX="104.0" layoutY="483.0" mnemonicParsing="false" onAction="#volver"
+                prefHeight="26.0" prefWidth="101.0" style="-fx-background-color: #BFEFFF;;" text="Volver">
+            <font>
+                <Font size="16.0"/>
+            </font>
+        </Button>
+        <Label layoutX="941.0" layoutY="14.0" text="Buscar:">
+            <font>
+                <Font size="16.0"/>
+            </font>
+        </Label>
+        <TextField fx:id="campoBuscar" layoutX="1005.0" layoutY="14.0" onKeyReleased="#buscar"/>
+        <Button fx:id="buttonVerAlquileres" layoutX="29.0" layoutY="229.0" mnemonicParsing="false"
+                onAction="#verAlquileres" prefHeight="39.0" prefWidth="205.0" text="Ver Alquileres Vehículo">
+            <font>
+                <Font size="17.0"/>
+            </font>
+        </Button>
+    </children>
+</AnchorPane>

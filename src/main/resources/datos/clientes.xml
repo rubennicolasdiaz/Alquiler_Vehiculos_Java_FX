@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Clientes>
+    <Cliente Dni="31987425Z">
+        <Nombre TipoDato="String">Ana Torres Delgado</Nombre>
+        <Telefono TipoDato="String">699123456</Telefono>
+        <Email TipoDato="String">ana@mail.com</Email>
+    </Cliente>
+    <Cliente Dni="75492318Q">
+        <Nombre TipoDato="String">David Navarro Santos</Nombre>
+        <Telefono TipoDato="String">687654321</Telefono>
+        <Email TipoDato="String">david@mail.com</Email>
+    </Cliente>
+    <Cliente Dni="29845671C">
+        <Nombre TipoDato="String">Elena Romero Ortega</Nombre>
+        <Telefono TipoDato="String">633112233</Telefono>
+        <Email TipoDato="String">elena@hotmail.com</Email>
+    </Cliente>
+    <Cliente Dni="84126397X">
+        <Nombre TipoDato="String">Javier Martín Gómez</Nombre>
+        <Telefono TipoDato="String">645987321</Telefono>
+        <Email TipoDato="String">javier@hotmail.com</Email>
+    </Cliente>
+    <Cliente Dni="49217654T">
+        <Nombre TipoDato="String">Laura Sánchez Ruiz</Nombre>
+        <Telefono TipoDato="String">612345678</Telefono>
+        <Email TipoDato="String">laura@gmail.com</Email>
+    </Cliente>
+    <Cliente Dni="43519872P">
+        <Nombre TipoDato="String">Lucía García Ramos</Nombre>
+        <Telefono TipoDato="String">690445566</Telefono>
+        <Email TipoDato="String">lucia@gmail.com</Email>
+    </Cliente>
+    <Cliente Dni="17506329V">
+        <Nombre TipoDato="String">María López López</Nombre>
+        <Telefono TipoDato="String">677688699</Telefono>
+        <Email TipoDato="String">maria@mail.com</Email>
+    </Cliente>
+    <Cliente Dni="27532496R">
+        <Nombre TipoDato="String">José Ginés Nicolás Díaz</Nombre>
+        <Telefono TipoDato="String">601099267</Telefono>
+        <Email TipoDato="String">joginidi@gmail.com</Email>
+    </Cliente>
+    <Cliente Dni="67293415S">
+        <Nombre TipoDato="String">Roberto Fernández Díaz</Nombre>
+        <Telefono TipoDato="String">620876543</Telefono>
+        <Email TipoDato="String">roberto@gmail.com</Email>
+    </Cliente>
+    <Cliente Dni="75722433Q">
+        <Nombre TipoDato="String">Rubén Nicolás Díaz</Nombre>
+        <Telefono TipoDato="String">634808152</Telefono>
+        <Email TipoDato="String">anjenidi@gmail.com</Email>
+    </Cliente>
+</Clientes>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Alquileres>
+    <Alquiler Dni="17506329V" Matricula="8334JGW">
+        <FechaAlquiler Formato="dd/MM/yyyy">01/01/2025</FechaAlquiler>
+        <FechaDevolucion TipoDato="String">10/01/2025</FechaDevolucion>
+    </Alquiler>
+    <Alquiler Dni="27532496R" Matricula="8334JGW">
+        <FechaAlquiler Formato="dd/MM/yyyy">01/03/2025</FechaAlquiler>
+        <FechaDevolucion TipoDato="String">15/03/2025</FechaDevolucion>
+    </Alquiler>
+    <Alquiler Dni="75722433Q" Matricula="8334JGW">
+        <FechaAlquiler Formato="dd/MM/yyyy">01/02/2025</FechaAlquiler>
+        <FechaDevolucion TipoDato="String"/>
+    </Alquiler>
+    <Alquiler Dni="43519872P" Matricula="3453SER">
+        <FechaAlquiler Formato="dd/MM/yyyy">01/09/2025</FechaAlquiler>
+        <FechaDevolucion TipoDato="String"/>
+    </Alquiler>
+    <Alquiler Dni="31987425Z" Matricula="6664SDV">
+        <FechaAlquiler Formato="dd/MM/yyyy">01/09/2025</FechaAlquiler>
+        <FechaDevolucion TipoDato="String"/>
+    </Alquiler>
+</Alquileres>
