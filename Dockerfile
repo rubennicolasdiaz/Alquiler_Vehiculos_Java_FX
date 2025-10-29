@@ -1,26 +1,19 @@
 # ================================================
 # 🏗️ Etapa 1: Build del proyecto con Maven
 # ================================================
-FROM eclipse-temurin:21-jdk AS build
+FROM maven:3.9.9-eclipse-temurin-21 AS build
 
-# Carpeta de trabajo
 WORKDIR /app
 
-# Copiar pom.xml, mvnw y configuración de Maven
+# Copiar pom.xml y descargar dependencias
 COPY pom.xml .
-COPY mvnw .
-RUN chmod +x mvnw
-COPY .mvn .mvn
+RUN mvn dependency:go-offline -B
 
-# Descargar dependencias para cachear en Docker
-RUN ./mvnw dependency:go-offline -B
-
-# Copiar el resto del código fuente
+# Copiar el resto del código
 COPY src ./src
 
-# Compilar y empaquetar (sin ejecutar tests)
-RUN ./mvnw clean package -DskipTests
-
+# Compilar y empaquetar
+RUN mvn clean package -DskipTests
 
 # ================================================
 # 🚀 Etapa 2: Imagen runtime con soporte JavaFX
