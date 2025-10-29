@@ -1,5 +1,5 @@
 # Imagen base con soporte completo para JavaFX y Swing
-FROM bellsoft/liberica-openjfx:21
+FROM eclipse-temurin:21-jdk AS build
 
 # Carpeta de trabajo
 WORKDIR /app
