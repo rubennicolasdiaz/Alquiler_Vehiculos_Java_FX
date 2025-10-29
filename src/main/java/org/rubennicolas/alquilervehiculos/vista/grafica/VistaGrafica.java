@@ -1,56 +1,83 @@
 package org.rubennicolas.alquilervehiculos.vista.grafica;
 
+import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.image.Image;
 import javafx.stage.Stage;
+import org.rubennicolas.alquilervehiculos.controlador.Controlador;
 import org.rubennicolas.alquilervehiculos.excepciones.DomainException;
+import org.rubennicolas.alquilervehiculos.modelo.FactoriaFuenteDatos;
 import org.rubennicolas.alquilervehiculos.vista.Vista;
 import org.rubennicolas.alquilervehiculos.vista.grafica.controllers.ControllerVistaPrincipal;
-import org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.RutasConstantes;
+import org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.RutasConstantesFxml;
+import org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.RutasConstantesImagenes;
 
-import java.io.IOException;
-import java.util.Objects;
+import javax.swing.*;
 
-public class VistaGrafica extends Vista {
+public class VistaGrafica extends Application implements Vista {
 
-    public VistaGrafica() {
+    @Override
+    public void setControlador(Controlador controlador) {
 
     }
 
     @Override
     public void start(Stage stage) {
         try {
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/vistasfxml/VistaPrincipal.fxml"));
-            Parent raiz = fxmlLoader.load();
-            Scene escena = new Scene(raiz);
+            FXMLLoader loader = new FXMLLoader(
+                    RutasConstantesFxml.get(RutasConstantesFxml.VISTA_PRINCIPAL)
+            );
 
-            Image icono = new Image(Objects.requireNonNull(getClass().getResource(RutasConstantes.COCHE_ALQUILER)).toExternalForm());
-            stage.getIcons().add(icono);
+            Parent root = loader.load();
+            Scene scene = new Scene(root);
 
-            stage.setTitle("Aplicación Gestión de Alquiler de Vehículos");
+            stage.setScene(scene);
+            stage.setTitle("Gestión de Alquiler de Vehículos");
+            stage.getIcons().add(RutasConstantesImagenes.loadImage(RutasConstantesImagenes.COCHE_ALQUILER));
 
-            ControllerVistaPrincipal controller = fxmlLoader.getController();
-            controller.setStage(stage);
 
-            stage.setScene(escena);
+            ControllerVistaPrincipal controllerVista = loader.getController();
+
+            controllerVista.setStage(stage);
+
             stage.show();
 
-        } catch (IllegalStateException | IllegalArgumentException | IOException e) {
-            throw new DomainException(e.getMessage());
+
+        } catch (Exception e) {
+            throw new DomainException("Error al iniciar la aplicación: " + e.getMessage());
         }
+    }
+
+
+    private FactoriaFuenteDatos obtenerFuenteDeDatosConJOptionPane() {
+
+        // 1️⃣ Elegir tipo de datos
+        FactoriaFuenteDatos[] tiposDatos = FactoriaFuenteDatos.values();
+        JComboBox<FactoriaFuenteDatos> comboDatos = new JComboBox<>(tiposDatos);
+
+        int opcionDatos = JOptionPane.showConfirmDialog(
+                null, comboDatos,
+                "Seleccionar Fuente de Datos",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+        );
+
+        if (opcionDatos == JOptionPane.CANCEL_OPTION) {
+            System.out.println("[INFO] Aplicación cancelada por el usuario.");
+            System.exit(0);
+        }
+
+        return (FactoriaFuenteDatos) comboDatos.getSelectedItem();
     }
 
     @Override
     public void comenzar() {
         launch();
-        Stage stage = new Stage();
-        start(stage);
     }
 
     @Override
     public void terminar() {
+
     }
 }
-

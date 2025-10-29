@@ -6,6 +6,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import org.rubennicolas.alquilervehiculos.AppContextThread;
 import org.rubennicolas.alquilervehiculos.controlador.Controlador;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Cliente;
 
@@ -33,9 +34,34 @@ public class ControllerAddClientes extends ControllerVistaClientes {
     @FXML
     private Button buttonGuardar;
 
+    private Controlador controlador;
+
+    @Override
+    public void setControlador(Controlador controlador) {
+        this.controlador = controlador;
+    }
+
+    public Controlador getControlador() {
+        return controlador;
+    }
+
     @Override
     public void initialize(URL url, ResourceBundle rb) {
 
+        Controlador controladorOriginal = AppContextThread.getControlador();
+        if (controladorOriginal == null) {
+            System.err.println("[ERROR] No se pudo obtener el controlador desde AppContextThread.");
+        } else {
+            this.controlador = controladorOriginal;
+
+            this.controlador.setVista(this);
+
+
+            controlador.getVista().setControlador(controlador);
+
+            controlador.getModelo().comenzar();
+            System.out.println("[INFO] Controlador inyectado correctamente en ControllerVistaPrincipal.");
+        }
     }
 
     public void initAtributtes(ObservableList<Cliente> listaClientes) {
@@ -64,7 +90,6 @@ public class ControllerAddClientes extends ControllerVistaClientes {
                 if (this.cliente == null) {
 
                     // Se inserta el cliente:
-
                     this.cliente = cliente;
 
                     Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -79,7 +104,7 @@ public class ControllerAddClientes extends ControllerVistaClientes {
                 stage.close();
             }
 
-            Controlador.getInstancia().insertarCliente(cliente);
+            getControlador().insertarCliente(cliente);
 
         } catch (Exception e) {
 

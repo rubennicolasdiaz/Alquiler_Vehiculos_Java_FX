@@ -3,16 +3,13 @@ package org.rubennicolas.alquilervehiculos.vista.grafica.controllers;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
-import javafx.scene.Node;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.stage.Stage;
+import org.rubennicolas.alquilervehiculos.AppContextThread;
 import org.rubennicolas.alquilervehiculos.controlador.Controlador;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Alquiler;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Cliente;
@@ -24,8 +21,9 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 import static org.rubennicolas.alquilervehiculos.vista.grafica.controllers.ControllerVistaAlquileres.FORMATO_FECHA;
+import static org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.EstilosConstantes.STYLE_COLUMN;
 
-public class ControllerVistaVehiculoAlquiler implements Initializable {
+public class ControllerVistaVehiculoAlquiler extends ControllerVistaVehiculos {
 
     @FXML
     private ChoiceBox<Vehiculo> selVehiculo;
@@ -59,11 +57,37 @@ public class ControllerVistaVehiculoAlquiler implements Initializable {
 
     protected Alquiler registro;
 
+    private Controlador controlador;
+
+    @Override
+    public void setControlador(Controlador controlador) {
+        this.controlador = controlador;
+    }
+
+    public Controlador getControlador() {
+        return controlador;
+    }
+
     @Override
     public void initialize(URL arg0, ResourceBundle arg1) {
 
+        Controlador controladorOriginal = AppContextThread.getControlador();
+        if (controladorOriginal == null) {
+            System.err.println("[ERROR] No se pudo obtener el controlador desde AppContextThread.");
+        } else {
+            this.controlador = controladorOriginal;
+
+            this.controlador.setVista(this);
+
+
+            controlador.getVista().setControlador(controlador);
+
+            controlador.getModelo().comenzar();
+            System.out.println("[INFO] Controlador inyectado correctamente en ControllerVistaPrincipal.");
+        }
+
         // Obtener la lista de vehículos:
-        List<Vehiculo> listaVehiculos = Controlador.getInstancia().getVehiculos();
+        List<Vehiculo> listaVehiculos = getControlador().getVehiculos();
 
         // Agregar la lista de Vehículos a la ChoiceBox:
         selVehiculo.getItems().addAll(listaVehiculos);
@@ -83,12 +107,12 @@ public class ControllerVistaVehiculoAlquiler implements Initializable {
         colDibujoVehiculo.setCellFactory(columna -> new TipoVehiculoTableCell());
 
         //Estilo de elementos de columnas:
-        colCliente.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-        colVehiculo.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-        colDibujoVehiculo.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-        colFechaAlquiler.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-        colFechaDevolucion.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-        colGetPrecio.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
+        colCliente.setStyle(STYLE_COLUMN);
+        colVehiculo.setStyle(STYLE_COLUMN);
+        colDibujoVehiculo.setStyle(STYLE_COLUMN);
+        colFechaAlquiler.setStyle(STYLE_COLUMN);
+        colFechaDevolucion.setStyle(STYLE_COLUMN);
+        colGetPrecio.setStyle(STYLE_COLUMN);
 
         this.colFechaAlquiler.setCellFactory(col -> new TableCell<>() {
             @Override
@@ -120,8 +144,8 @@ public class ControllerVistaVehiculoAlquiler implements Initializable {
 
     @FXML
     void filtrarAlquilerVehiculo() {
-        this.vehiculo = (Vehiculo) selVehiculo.getValue();
-        listaAlquileres.setAll(Controlador.getInstancia().getAlquileresPorVehiculo(vehiculo));
+        this.vehiculo = selVehiculo.getValue();
+        listaAlquileres.setAll(getControlador().getAlquileresPorVehiculo(vehiculo));
         listaAlquileresVisible.setAll(listaAlquileres);
 
         this.tablaAlquileres.setItems(listaAlquileresVisible);
@@ -133,9 +157,4 @@ public class ControllerVistaVehiculoAlquiler implements Initializable {
         this.registro = this.tablaAlquileres.getSelectionModel().getSelectedItem();
     }
 
-    @FXML
-    void volver(ActionEvent event) {
-        Stage escenarioActual = (Stage) ((Node) event.getSource()).getScene().getWindow();
-        escenarioActual.close();
-    }
 }

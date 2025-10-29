@@ -8,6 +8,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import org.rubennicolas.alquilervehiculos.AppContextThread;
 import org.rubennicolas.alquilervehiculos.controlador.Controlador;
 import org.rubennicolas.alquilervehiculos.excepciones.DomainException;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Autobus;
@@ -56,8 +57,34 @@ public class ControllerAddVehiculos extends ControllerVistaVehiculos {
 
     private final String[] vehiculosTipos = {"Turismo", "Furgoneta", "Autobus"};
 
+    private Controlador controlador;
+
+    @Override
+    public void setControlador(Controlador controlador) {
+        this.controlador = controlador;
+    }
+
+    public Controlador getControlador() {
+        return controlador;
+    }
+
     @Override
     public void initialize(URL url, ResourceBundle rb) {
+
+        Controlador controladorOriginal = AppContextThread.getControlador();
+        if (controladorOriginal == null) {
+            System.err.println("[ERROR] No se pudo obtener el controlador desde AppContextThread.");
+        } else {
+            this.controlador = controladorOriginal;
+
+            this.controlador.setVista(this);
+
+
+            controlador.getVista().setControlador(controlador);
+
+            controlador.getModelo().comenzar();
+            System.out.println("[INFO] Controlador inyectado correctamente en ControllerVistaPrincipal.");
+        }
 
         // Cargar la lista de valores en el ChoiceBox
         this.campoCilindrada.setDisable(true);
@@ -215,7 +242,7 @@ public class ControllerAddVehiculos extends ControllerVistaVehiculos {
             }
 
             // Insertamos el vehículo
-            Controlador.getInstancia().insertarVehiculo(vehiculoNuevo);
+            getControlador().insertarVehiculo(vehiculoNuevo);
             this.vehiculo = vehiculoNuevo;
 
             // Mostramos alerta de éxito

@@ -21,9 +21,8 @@ public class Turismo extends Vehiculo {
     }
 
     public Turismo(Turismo turismo) {
-
-        super(turismo.getMarca(), turismo.getModelo(), turismo.getMatricula());
-        setCilindrada(turismo.getCilindrada());
+        this(turismo.getMarca(), turismo.getModelo(), turismo.getMatricula(), turismo.getCilindrada());
+        this.tipoVehiculo = TipoVehiculo.TURISMO;
     }
 
     public int getCilindrada() {
@@ -43,6 +42,11 @@ public class Turismo extends Vehiculo {
     }
 
     @Override
+    public Vehiculo clonar() {
+        return new Turismo(this);
+    }
+
+    @Override
     public int getFactorPrecio() {
         return getCilindrada() / FACTOR_CILINDRADA;
     }
@@ -52,4 +56,3 @@ public class Turismo extends Vehiculo {
         return String.format("%s %s (%s CC) - %s", getMarca(), getModelo(), getCilindrada(), getMatricula());
     }
 }
-

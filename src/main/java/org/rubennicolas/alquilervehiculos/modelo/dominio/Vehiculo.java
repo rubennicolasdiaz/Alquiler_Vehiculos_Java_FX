@@ -91,6 +91,12 @@ public abstract class Vehiculo implements Comparable<Vehiculo> {
         return tipoVehiculo;
     }
 
+    public void setTipoVehiculo(TipoVehiculo tipoVehiculo) {
+        this.tipoVehiculo = tipoVehiculo;
+    }
+
+    public abstract Vehiculo clonar();
+
     @Override
     public int hashCode() {
         return Objects.hash(matricula);

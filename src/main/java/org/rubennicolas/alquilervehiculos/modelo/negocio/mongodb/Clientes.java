@@ -1,5 +1,6 @@
 package org.rubennicolas.alquilervehiculos.modelo.negocio.mongodb;
 
+import com.mongodb.MongoException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
@@ -13,72 +14,58 @@ import org.rubennicolas.alquilervehiculos.modelo.negocio.utilidades.ConexionMong
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Clientes implements IClientes {
 
-    private static Clientes instancia;
     private final MongoCollection<Document> coleccion;
 
-    private Clientes() {
-        // Usa tu clase de conexión MongoDB
-        ConexionMongoDB conexion = new ConexionMongoDB();
-        MongoDatabase database = conexion.abrirConexion();
-        this.coleccion = database.getCollection("clientes");
+    // --- Constructor de producción ---
+    public Clientes() {
+        try {
+            ConexionMongoDB conexion = new ConexionMongoDB();
+            MongoDatabase database = conexion.abrirConexion();
+            this.coleccion = database.getCollection("clientes");
+        } catch (Exception e) {
+            throw new MongoException("Error de conexión a MongoDB: " + e.getMessage());
+        }
     }
 
-    public static Clientes getInstancia() {
-        if (instancia == null) {
-            instancia = new Clientes();
-        }
-        return instancia;
+    // --- Constructor para testing (inyectando colección mock) ---
+    public Clientes(MongoCollection<Document> coleccion) {
+        this.coleccion = coleccion;
     }
 
     @Override
     public void comenzar() {
-        getInstancia();
+        // Nada que hacer, la conexión ya está abierta
     }
 
     @Override
     public List<Cliente> getClientes() {
-        List<Cliente> clientes = new ArrayList<>();
+        try {
+            List<Cliente> clientes = new ArrayList<>();
+            for (Document doc : coleccion.find()) {
+                clientes.add(documentToCliente(doc));
+            }
 
-        for (Document doc : coleccion.find()) {
-            Cliente cliente = new Cliente(
-                    doc.getString("nombre_apellidos"),
-                    doc.getString("dni"),
-                    doc.getString("telefono"),
-                    doc.getString("email")
-            );
-            clientes.add(cliente);
+            return clientes.stream()
+                    .sorted(Comparator.comparing(Cliente::getNombreApellidos))
+                    .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            throw new DomainException("Error al obtener clientes de MongoDB: " + e.getMessage());
         }
-
-        return clientes.stream()
-                .sorted(Comparator.comparing(Cliente::getNombreApellidos))
-                .toList();
     }
 
     @Override
     public Cliente buscarCliente(Cliente cliente) {
-
         if (cliente == null) {
             throw new NullPointerException("No se puede buscar un cliente nulo.");
         }
 
-        Cliente clienteBuscado = new Cliente();
-
         Document doc = coleccion.find(Filters.eq("dni", cliente.getDni())).first();
-
-        if (doc != null) {
-
-            clienteBuscado.setNombreApellidos(doc.getString("nombre_apellidos"));
-            clienteBuscado.setDni(doc.getString("dni"));
-            clienteBuscado.setTelefono(doc.getString("telefono"));
-            clienteBuscado.setEmail(doc.getString("email"));
-
-            return clienteBuscado;
-        } else {
-            return null;
-        }
+        return (doc != null) ? documentToCliente(doc) : null;
     }
 
     @Override
@@ -91,13 +78,11 @@ public class Clientes implements IClientes {
             throw new DomainException("Ya existe un cliente con ese DNI.");
         }
 
-        Document doc = new Document("nombre_apellidos", cliente.getNombreApellidos())
-                .append("dni", cliente.getDni())
-                .append("telefono", cliente.getTelefono())
-                .append("email", cliente.getEmail());
-
-        coleccion.insertOne(doc);
-        System.out.println("Cliente insertado correctamente en MongoDB.");
+        try {
+            coleccion.insertOne(clienteToDocument(cliente));
+        } catch (Exception e) {
+            throw new DomainException("Error al insertar cliente en MongoDB: " + e.getMessage());
+        }
     }
 
     @Override
@@ -107,39 +92,58 @@ public class Clientes implements IClientes {
         }
 
         if (buscarCliente(cliente) == null) {
-            throw new IllegalArgumentException("No existe ningún cliente con ese DNI.");
+            throw new DomainException("No existe ningún cliente con ese DNI.");
         }
 
-        coleccion.updateOne(
-                Filters.eq("dni", cliente.getDni()),
-                Updates.combine(
-                        Updates.set("nombre_apellidos", cliente.getNombreApellidos()),
-                        Updates.set("telefono", cliente.getTelefono()),
-                        Updates.set("email", cliente.getEmail())
-                )
-        );
-        System.out.println("Cliente modificado correctamente en MongoDB.");
+        try {
+            coleccion.updateOne(
+                    Filters.eq("dni", cliente.getDni()),
+                    Updates.combine(
+                            Updates.set("nombre_apellidos", cliente.getNombreApellidos()),
+                            Updates.set("telefono", cliente.getTelefono()),
+                            Updates.set("email", cliente.getEmail())
+                    )
+            );
+        } catch (Exception e) {
+            throw new DomainException("Error al modificar cliente en MongoDB: " + e.getMessage());
+        }
     }
 
     @Override
     public void borrarCliente(Cliente cliente) {
-
-        Cliente clienteBuscado = buscarCliente(cliente);
-
-        if (clienteBuscado == null) {
+        if (cliente == null) {
             throw new NullPointerException("No se puede borrar un cliente nulo.");
         }
 
-        if (buscarCliente(clienteBuscado) == null) {
-            throw new IllegalArgumentException("No existe ningún cliente con ese DNI.");
+        if (buscarCliente(cliente) == null) {
+            throw new DomainException("No existe ningún cliente con ese DNI.");
         }
 
-        coleccion.deleteOne(Filters.eq("dni", cliente.getDni()));
-        System.out.println("Cliente eliminado correctamente de MongoDB.");
+        try {
+            coleccion.deleteOne(Filters.eq("dni", cliente.getDni()));
+        } catch (Exception e) {
+            throw new DomainException("Error al borrar cliente en MongoDB: " + e.getMessage());
+        }
+    }
+
+    private Cliente documentToCliente(Document doc) {
+        return new Cliente(
+                doc.getString("nombre_apellidos"),
+                doc.getString("dni"),
+                doc.getString("telefono"),
+                doc.getString("email")
+        );
+    }
+
+    private Document clienteToDocument(Cliente cliente) {
+        return new Document("nombre_apellidos", cliente.getNombreApellidos())
+                .append("dni", cliente.getDni())
+                .append("telefono", cliente.getTelefono())
+                .append("email", cliente.getEmail());
     }
 
     @Override
     public void terminar() {
-
+        // Nada que cerrar (Mongo maneja la conexión automáticamente)
     }
 }

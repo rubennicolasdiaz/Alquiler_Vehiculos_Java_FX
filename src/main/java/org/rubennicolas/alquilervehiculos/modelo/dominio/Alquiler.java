@@ -72,7 +72,7 @@ public class Alquiler {
         return cliente;
     }
 
-    private void setCliente(Cliente cliente) {
+    public void setCliente(Cliente cliente) {
 
         if (cliente == null) {
             throw new NullPointerException("El cliente no puede ser nulo.");
@@ -84,7 +84,7 @@ public class Alquiler {
         return vehiculo;
     }
 
-    private void setVehiculo(Vehiculo vehiculo) {
+    public void setVehiculo(Vehiculo vehiculo) {
 
         if (vehiculo == null) {
             throw new NullPointerException("El vehículo no puede ser nulo.");

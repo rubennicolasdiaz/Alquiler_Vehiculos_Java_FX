@@ -7,6 +7,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.DatePicker;
 import javafx.stage.Stage;
+import org.rubennicolas.alquilervehiculos.AppContextThread;
 import org.rubennicolas.alquilervehiculos.controlador.Controlador;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Alquiler;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Cliente;
@@ -35,16 +36,43 @@ public class ControllerAddAlquileres extends ControllerVistaAlquileres {
     @FXML
     private Button buttonGuardar;
 
+    private Controlador controlador;
+
+    @Override
+    public void setControlador(Controlador controlador) {
+        this.controlador = controlador;
+    }
+
+    public Controlador getControlador() {
+        return controlador;
+    }
+
     @Override
     public void initialize(URL url, ResourceBundle rb) {
 
-        List<Cliente> listaClientes = Controlador.getInstancia().getClientes();
-        List<Vehiculo> listaVehiculos = Controlador.getInstancia().getVehiculos();
+        Controlador controladorOriginal = AppContextThread.getControlador();
+        if (controladorOriginal == null) {
+            System.err.println("[ERROR] No se pudo obtener el controlador desde AppContextThread.");
+        } else {
+            this.controlador = controladorOriginal;
+
+            this.controlador.setVista(this);
+
+
+            controlador.getVista().setControlador(controlador);
+
+            controlador.getModelo().comenzar();
+            System.out.println("[INFO] Controlador inyectado correctamente en ControllerVistaPrincipal.");
+        }
+        
+        List<Cliente> listaClientes = getControlador().getClientes();
+        List<Vehiculo> listaVehiculos = getControlador().getVehiculos();
 
         // Agregar la lista de clientes y vehículos a las ChoiceBox
         selCliente.getItems().addAll(listaClientes);
         selVehiculo.getItems().addAll(listaVehiculos);
     }
+
 
     public void initAtributtes(ObservableList<Alquiler> listaAlquileres) {
         this.listaAlquileres = listaAlquileres;
@@ -59,14 +87,14 @@ public class ControllerAddAlquileres extends ControllerVistaAlquileres {
 
         try {
             // Se recuperan los datos del alquiler:
-            Cliente cliente = (Cliente) this.selCliente.getValue();
-            Vehiculo vehiculo = (Vehiculo) this.selVehiculo.getValue();
+            Cliente cliente = this.selCliente.getValue();
+            Vehiculo vehiculo = this.selVehiculo.getValue();
             LocalDate fechaAlquiler = selFechaAlquiler.getValue();
 
             // Se crea el alquiler:
             Alquiler alquiler = new Alquiler(cliente, vehiculo, fechaAlquiler);
 
-            Controlador.getInstancia().insertarAlquiler(alquiler);
+            getControlador().insertarAlquiler(alquiler);
 
             if (!listaAlquileres.contains(alquiler)) {
 

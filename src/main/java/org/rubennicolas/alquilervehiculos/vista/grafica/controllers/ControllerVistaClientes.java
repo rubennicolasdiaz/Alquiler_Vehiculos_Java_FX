@@ -14,18 +14,21 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.rubennicolas.alquilervehiculos.AppContextThread;
 import org.rubennicolas.alquilervehiculos.controlador.Controlador;
 import org.rubennicolas.alquilervehiculos.excepciones.DomainException;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Cliente;
-import org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.RutasConstantes;
+import org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.RutasConstantesFxml;
+import org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.RutasConstantesImagenes;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
-public class ControllerVistaClientes implements Initializable {
+import static org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.EstilosConstantes.STYLE_COLUMN;
+
+public class ControllerVistaClientes extends ControllerVistaPrincipal implements Initializable {
 
     @FXML
     private TextField campoBuscar;
@@ -51,15 +54,41 @@ public class ControllerVistaClientes implements Initializable {
 
     protected Cliente registro;
 
+    private Controlador controlador;
+
+    @Override
+    public void setControlador(Controlador controlador) {
+        this.controlador = controlador;
+    }
+
+    public Controlador getControlador() {
+        return controlador;
+    }
+
     @Override
     public void initialize(URL arg0, ResourceBundle arg1) {
 
         try {
+            Controlador controladorOriginal = AppContextThread.getControlador();
+            if (controladorOriginal == null) {
+                System.err.println("[ERROR] No se pudo obtener el controlador desde AppContextThread.");
+            } else {
+                this.controlador = controladorOriginal;
+
+                this.controlador.setVista(this);
+
+
+                controlador.getVista().setControlador(controlador);
+
+                controlador.getModelo().comenzar();
+                System.out.println("[INFO] Controlador inyectado correctamente en ControllerVistaPrincipal.");
+            }
+
             listaClientes = FXCollections.observableArrayList();
-            listaClientes.setAll(Controlador.getInstancia().getClientes());
+            listaClientes.setAll(getControlador().getClientes());
 
             listaClientesVisible = FXCollections.observableArrayList();
-            listaClientesVisible.setAll(Controlador.getInstancia().getClientes());
+            listaClientesVisible.setAll(getControlador().getClientes());
 
             this.colNombreApellidos.setCellValueFactory(new PropertyValueFactory<>("nombreApellidos"));
             this.colDni.setCellValueFactory(new PropertyValueFactory<>("dni"));
@@ -67,10 +96,10 @@ public class ControllerVistaClientes implements Initializable {
             this.colEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
 
             //Estilo de elementos de columnas:
-            colNombreApellidos.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-            colDni.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-            colTelefono.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-            colEmail.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
+            colNombreApellidos.setStyle(STYLE_COLUMN);
+            colDni.setStyle(STYLE_COLUMN);
+            colTelefono.setStyle(STYLE_COLUMN);
+            colEmail.setStyle(STYLE_COLUMN);
 
             this.tablaClientes.setItems(listaClientesVisible);
             this.tablaClientes.refresh();
@@ -88,7 +117,8 @@ public class ControllerVistaClientes implements Initializable {
     void addCliente() {
 
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistasfxml/VistaAddClientes.fxml"));
+            FXMLLoader loader = new FXMLLoader(
+                    RutasConstantesFxml.get(RutasConstantesFxml.VISTA_ADD_CLIENTES));
             Parent root = loader.load();
 
             ControllerAddClientes controlador = loader.getController();
@@ -97,7 +127,7 @@ public class ControllerVistaClientes implements Initializable {
             Scene scene = new Scene(root);
             Stage stage = new Stage();
 
-            Image icono = new Image(Objects.requireNonNull(getClass().getResource(RutasConstantes.COCHE_ALQUILER)).toExternalForm());
+            Image icono = RutasConstantesImagenes.loadImage(RutasConstantesImagenes.COCHE_ALQUILER);
             stage.getIcons().add(icono);
 
             stage.setTitle("Añadir Cliente");
@@ -171,7 +201,8 @@ public class ControllerVistaClientes implements Initializable {
             try {
 
                 // Cargo la vista
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistasfxml/VistaEditClientes.fxml"));
+                FXMLLoader loader = new FXMLLoader(
+                        RutasConstantesFxml.get(RutasConstantesFxml.VISTA_EDIT_CLIENTES));
 
                 // Cargo la ventana
                 Parent root = loader.load();
@@ -186,7 +217,7 @@ public class ControllerVistaClientes implements Initializable {
                 Scene scene = new Scene(root);
                 Stage stage = new Stage();
 
-                Image icono = new Image(Objects.requireNonNull(getClass().getResource(RutasConstantes.COCHE_ALQUILER)).toExternalForm());
+                Image icono = RutasConstantesImagenes.loadImage(RutasConstantesImagenes.COCHE_ALQUILER);
                 stage.getIcons().add(icono);
 
                 stage.setTitle("Modificar Cliente");
@@ -206,8 +237,7 @@ public class ControllerVistaClientes implements Initializable {
 
                         this.listaClientesVisible.remove(clienteSeleccionado);
                     }
-
-                    Controlador.getInstancia().modificarCliente(clienteSeleccionado);
+                    getControlador().modificarCliente(clienteSeleccionado);
                 }
 
             } catch (IOException e) {
@@ -226,18 +256,17 @@ public class ControllerVistaClientes implements Initializable {
 
         try {
             // Cargo la vista
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(
-                    "/vistasfxml/VistaClienteAlquiler.fxml"));
+            FXMLLoader loader = new FXMLLoader(
+                    RutasConstantesFxml.get(RutasConstantesFxml.VISTA_CLIENTE_ALQUILER));
 
             // Cargo la ventana
             Parent root = loader.load();
 
             // Se crean Stage y Scene:
-
             Scene scene = new Scene(root);
             Stage stage = new Stage();
 
-            Image icono = new Image(Objects.requireNonNull(getClass().getResource(RutasConstantes.COCHE_ALQUILER)).toExternalForm());
+            Image icono = RutasConstantesImagenes.loadImage(RutasConstantesImagenes.COCHE_ALQUILER);
             stage.getIcons().add(icono);
 
             stage.setTitle("Ver Alquileres Cliente");
@@ -288,7 +317,7 @@ public class ControllerVistaClientes implements Initializable {
                 this.listaClientes.remove(cliente);
                 this.listaClientesVisible.remove(cliente);
 
-                Controlador.getInstancia().borrarCliente(cliente);
+                getControlador().borrarCliente(cliente);
 
                 // Crear y mostrar alerta de confirmación
                 Alert confirmacion = new Alert(Alert.AlertType.INFORMATION);

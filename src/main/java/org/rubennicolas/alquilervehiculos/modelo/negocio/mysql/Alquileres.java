@@ -1,130 +1,133 @@
 package org.rubennicolas.alquilervehiculos.modelo.negocio.mysql;
 
-import org.rubennicolas.alquilervehiculos.controlador.Controlador;
 import org.rubennicolas.alquilervehiculos.excepciones.DomainException;
-import org.rubennicolas.alquilervehiculos.modelo.dominio.Alquiler;
-import org.rubennicolas.alquilervehiculos.modelo.dominio.Cliente;
-import org.rubennicolas.alquilervehiculos.modelo.dominio.Turismo;
-import org.rubennicolas.alquilervehiculos.modelo.dominio.Vehiculo;
+import org.rubennicolas.alquilervehiculos.modelo.dominio.*;
 import org.rubennicolas.alquilervehiculos.modelo.negocio.IAlquileres;
 import org.rubennicolas.alquilervehiculos.modelo.negocio.utilidades.ConexionMySQL;
 
-import javax.naming.OperationNotSupportedException;
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 
 import static org.rubennicolas.alquilervehiculos.modelo.negocio.utilidades.UtilidadesAlquiler.comprobarAlquiler;
 import static org.rubennicolas.alquilervehiculos.modelo.negocio.utilidades.UtilidadesAlquiler.comprobarDevolucion;
 
 public class Alquileres implements IAlquileres {
 
-    private static Alquileres instancia;
     private final ConexionMySQL conexionMySQL;
+    private final Function<String, Cliente> buscadorCliente;
+    private final Function<String, Vehiculo> buscadorVehiculo;
 
-    private Alquileres() {
-        conexionMySQL = new ConexionMySQL();
+    // --- Constructor principal (producción) ---
+    public Alquileres() {
+        this(
+                new ConexionMySQL(),
+                dni -> new Clientes().buscarCliente(new Cliente("tmp", dni, "000000000", "mail@mail.com")),
+                matricula -> new Vehiculos().buscarVehiculo(
+                        new Turismo("tmp", "tmp", matricula, 1000))
+        );
     }
 
-    public static Alquileres getInstancia() {
-
-        if (instancia == null) {
-            instancia = new Alquileres(); // Crear la instancia sólo si aún no se ha creado
-        }
-        return instancia;
+    // --- Constructor completo (para test o inyección manual) ---
+    public Alquileres(ConexionMySQL conexionMySQL,
+                      Function<String, Cliente> buscadorCliente,
+                      Function<String, Vehiculo> buscadorVehiculo) {
+        this.conexionMySQL = conexionMySQL;
+        this.buscadorCliente = buscadorCliente;
+        this.buscadorVehiculo = buscadorVehiculo;
     }
 
     @Override
     public void comenzar() {
-        getInstancia();
+        // Nada que hacer; la conexión se abre en cada operación
     }
 
     @Override
     public List<Alquiler> getAlquileres() {
 
-        List<Alquiler> alquileres = new ArrayList<>();
+        String sql = """
+                    SELECT 
+                        a.id,
+                        a.fechaAlquiler,
+                        a.fechaDevolucion,
+                        c.dni,
+                        c.nombre_apellidos,
+                        c.telefono,
+                        c.email,
+                        v.matricula,
+                        v.marca,
+                        v.modelo,
+                        v.tipo_vehiculo,
+                        v.cilindrada,
+                        v.plazas,
+                        v.pma
+                    FROM alquileres a
+                    JOIN clientes  c ON a.cliente  = c.dni
+                    JOIN vehiculos v ON a.vehiculo = v.matricula
+                """;
 
-        String sql = "SELECT id, cliente, vehiculo, fechaAlquiler, fechaDevolucion FROM alquileres";
+
+        List<Alquiler> alquileres = new ArrayList<>();
 
         try (Connection connection = conexionMySQL.abrirConexion();
              Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
-
-                int id = rs.getInt("id");
-                String dniCliente = rs.getString("cliente");
-                String matriculaVehiculo = rs.getString("vehiculo");
-                Date fechaAlquilerSQL = rs.getDate("fechaAlquiler");
-                Date fechaDevolucionSQL = rs.getDate("fechaDevolucion");
-
-                LocalDate fechaAlquiler = SQLDateToLocalDate(fechaAlquilerSQL);
-                LocalDate fechaDevolucion = SQLDateToLocalDate(fechaDevolucionSQL);
-
-                Cliente clienteBuscado = new Cliente("Cliente", dniCliente, "999999999", "mail@mail.com");
-                Cliente cliente = Controlador.getInstancia().buscarCliente(clienteBuscado);
-
-                Vehiculo vehiculoBuscado = new Turismo("Marca", "Modelo", matriculaVehiculo, 1000);
-                Vehiculo vehiculo = Controlador.getInstancia().buscarVehiculo(vehiculoBuscado);
-
-                if (fechaDevolucion == null) {
-                    Alquiler alquiler = new Alquiler(id, cliente, vehiculo, fechaAlquiler);
-                    alquileres.add(alquiler);
-                } else {
-                    Alquiler alquiler = new Alquiler(id, cliente, vehiculo, fechaAlquiler, fechaDevolucion);
-                    alquileres.add(alquiler);
-                }
-
-
+                Alquiler alquiler = resultSetToAlquilerJoin(rs);
+                if (alquiler != null) alquileres.add(alquiler);
             }
-        } catch (SQLException e) {
-            throw new DomainException(e.getMessage());
-        }
-        return alquileres.stream()
-                .sorted(Comparator.comparing(Alquiler::getFechaAlquiler)
-                        .thenComparing(Alquiler::getCliente)
-                        .thenComparing(Alquiler::getVehiculo))
-                .toList();
-    }
 
+            return alquileres.stream()
+                    .sorted(Comparator.comparing(Alquiler::getFechaAlquiler)
+                            .thenComparing(a -> a.getCliente().getNombreApellidos())
+                            .thenComparing(a -> a.getVehiculo().getMatricula()))
+                    .toList();
+
+        } catch (SQLException e) {
+            throw new DomainException("Error al obtener los alquileres: " + e.getMessage());
+        }
+    }
 
     @Override
     public List<Alquiler> getAlquileresPorCliente(Cliente cliente) {
         return getAlquileres().stream()
-                .filter(alq -> alq.getCliente().equals(cliente))
-                .sorted(Comparator.comparing(Alquiler::getFechaAlquiler)
-                        .thenComparing(Alquiler::getCliente)
-                        .thenComparing(Alquiler::getVehiculo))
+                .filter(a -> a.getCliente().equals(cliente))
                 .toList();
     }
 
     @Override
     public List<Alquiler> getAlquileresPorVehiculo(Vehiculo vehiculo) {
         return getAlquileres().stream()
-                .filter(alq -> alq.getVehiculo().equals(vehiculo))
-                .sorted(Comparator.comparing(Alquiler::getFechaAlquiler)
-                        .thenComparing(Alquiler::getCliente)
-                        .thenComparing(Alquiler::getVehiculo))
+                .filter(a -> a.getVehiculo().equals(vehiculo))
                 .toList();
     }
 
     @Override
     public Alquiler buscarAlquiler(int id) {
+        String sql = "SELECT * FROM alquileres WHERE id = ?";
 
-        return getAlquileres().stream()
-                .filter(alquiler -> alquiler.getId() == id)
-                .findFirst()
-                .orElse(null);
+        try (Connection connection = conexionMySQL.abrirConexion();
+             PreparedStatement pst = connection.prepareStatement(sql)) {
+
+            pst.setInt(1, id);
+            ResultSet rs = pst.executeQuery();
+
+            return rs.next() ? resultSetToAlquiler(rs) : null;
+
+        } catch (SQLException e) {
+            throw new DomainException("Error al buscar el alquiler: " + e.getMessage());
+        }
     }
 
     @Override
     public void insertarAlquiler(Alquiler alquiler) {
-
-        if (alquiler == null) {
+        if (alquiler == null)
             throw new NullPointerException("No se puede insertar un alquiler nulo.");
-        }
+
         comprobarAlquiler(alquiler.getCliente(), alquiler.getVehiculo(),
                 alquiler.getFechaAlquiler(), getAlquileres());
 
@@ -136,21 +139,17 @@ public class Alquileres implements IAlquileres {
             pst.setInt(1, alquiler.getId());
             pst.setString(2, alquiler.getCliente().getDni());
             pst.setString(3, alquiler.getVehiculo().getMatricula());
-            pst.setDate(4, LocalDateToSQLDate(alquiler.getFechaAlquiler()));
+            pst.setDate(4, Date.valueOf(alquiler.getFechaAlquiler()));
+            pst.executeUpdate();
 
-            int filasInsertadas = pst.executeUpdate();
-            if (filasInsertadas > 0) {
-                System.out.println("Alquiler insertado correctamente en la base de datos.");
-            }
         } catch (SQLException e) {
-            throw new DomainException("No se pudo insertar el alquiler en la base de datos.");
+            throw new DomainException("Error al insertar alquiler en MySQL: " + e.getMessage());
         }
     }
 
+    @Override
     public void devolverAlquiler(Alquiler alquiler, LocalDate fechaDevolucion) {
-
         comprobarDevolucion(alquiler, fechaDevolucion, getAlquileres());
-
         alquiler.setFechaDevolucion(fechaDevolucion);
 
         String sql = "UPDATE alquileres SET fechaDevolucion = ? WHERE id = ?";
@@ -158,64 +157,126 @@ public class Alquileres implements IAlquileres {
         try (Connection connection = conexionMySQL.abrirConexion();
              PreparedStatement pst = connection.prepareStatement(sql)) {
 
-
-            // 1. Nuevo valor para la fechaDevolucion
-            pst.setDate(1, LocalDateToSQLDate(fechaDevolucion));
-
-            // 2. Identificador del alquiler que quieres actualizar
+            pst.setDate(1, Date.valueOf(fechaDevolucion));
             pst.setInt(2, alquiler.getId());
+            pst.executeUpdate();
 
-            int filasActualizadas = pst.executeUpdate();
-
-            if (filasActualizadas > 0) {
-                System.out.println("Fecha de devolución actualizada correctamente en la base de datos.");
-            } else {
-                System.out.println("No se encontró ningún alquiler con id: " + alquiler.getId());
-            }
         } catch (SQLException e) {
-            throw new DomainException("No se pudo actualizar la fecha de devolución en la base de datos.");
+            throw new DomainException("Error al actualizar devolución en MySQL: " + e.getMessage());
         }
     }
 
     @Override
     public void borrarAlquiler(Alquiler alquiler) {
+        if (alquiler == null)
+            throw new DomainException("No se puede borrar un alquiler nulo.");
 
-        try {
-            if (alquiler == null) {
-                throw new NullPointerException("No se puede borrar un alquiler nulo.");
-            }
-            if (!getAlquileres().contains(alquiler)) {
-                throw new OperationNotSupportedException("No existe ningún alquiler igual.");
-            }
+        String sql = "DELETE FROM alquileres WHERE id = ?";
 
-            String sql = "DELETE FROM alquileres WHERE id = ?";
-            try (Connection connection = conexionMySQL.abrirConexion();
-                 PreparedStatement pst = connection.prepareStatement(sql)) {
+        try (Connection connection = conexionMySQL.abrirConexion();
+             PreparedStatement pst = connection.prepareStatement(sql)) {
 
-                pst.setInt(1, alquiler.getId());
-                int filasBorradas = pst.executeUpdate();
+            pst.setInt(1, alquiler.getId());
+            int filas = pst.executeUpdate();
 
-                if (filasBorradas == 0) {
-                    throw new DomainException("No se pudo borrar el alquiler de la base de datos.");
-                }
-            } catch (SQLException e) {
-                throw new DomainException("Fallo al conectar o ejecutar el DELETE en la base de datos.");
-            }
-        } catch (OperationNotSupportedException e) {
-            throw new DomainException(e.getMessage());
+            if (filas == 0)
+                throw new DomainException("No existe ningún alquiler con ese ID.");
+
+        } catch (SQLException e) {
+            throw new DomainException("Error al borrar alquiler en MySQL: " + e.getMessage());
         }
     }
 
     @Override
     public void terminar() {
-
+        // No mantenemos conexiones abiertas
     }
 
-    private static LocalDate SQLDateToLocalDate(Date sqlDate) {
-        return (sqlDate == null) ? null : sqlDate.toLocalDate();
+    // --- Métodos auxiliares ---
+
+    private Alquiler resultSetToAlquiler(ResultSet rs) {
+        try {
+            int id = rs.getInt("id");
+            String dniCliente = rs.getString("cliente");
+            String matriculaVehiculo = rs.getString("vehiculo");
+            LocalDate fechaAlquiler = rs.getDate("fechaAlquiler").toLocalDate();
+            Date fechaDevSQL = rs.getDate("fechaDevolucion");
+            LocalDate fechaDevolucion = (fechaDevSQL != null) ? fechaDevSQL.toLocalDate() : null;
+
+            Cliente cliente = buscadorCliente.apply(dniCliente);
+            Vehiculo vehiculo = buscadorVehiculo.apply(matriculaVehiculo);
+
+            if (cliente == null || vehiculo == null)
+                return null;
+
+            return (fechaDevolucion == null)
+                    ? new Alquiler(id, cliente, vehiculo, fechaAlquiler)
+                    : new Alquiler(id, cliente, vehiculo, fechaAlquiler, fechaDevolucion);
+
+        } catch (SQLException e) {
+            throw new DomainException("Error al mapear ResultSet a Alquiler: " + e.getMessage());
+        }
     }
 
-    private static Date LocalDateToSQLDate(LocalDate localDate) {
-        return (localDate == null) ? null : Date.valueOf(localDate);
+    private Alquiler resultSetToAlquilerJoin(ResultSet rs) {
+        try {
+            int id = rs.getInt("id");
+
+            // Fechas
+            LocalDate fechaAlquiler = rs.getDate("fechaAlquiler").toLocalDate();
+            Date fechaDevSQL = rs.getDate("fechaDevolucion");
+            LocalDate fechaDevolucion = (fechaDevSQL != null) ? fechaDevSQL.toLocalDate() : null;
+
+            // Cliente completo
+            Cliente cliente = new Cliente(
+                    rs.getString("nombre_apellidos"),
+                    rs.getString("dni"),
+                    rs.getString("telefono"),
+                    rs.getString("email")
+            );
+
+            // Vehículo completo (según tipo)
+            String tipo = rs.getString("tipo_vehiculo");
+            Vehiculo vehiculo;
+
+            if (tipo == null) {
+                throw new DomainException("El tipo de vehículo no puede ser nulo para el alquiler ID " + id);
+            }
+
+            switch (tipo.toUpperCase()) {
+                case "TURISMO" -> vehiculo = new Turismo(
+                        rs.getString("marca"),
+                        rs.getString("modelo"),
+                        rs.getString("matricula"),
+                        rs.getInt("cilindrada")
+                );
+
+                case "FURGONETA" -> vehiculo = new Furgoneta(
+                        rs.getString("marca"),
+                        rs.getString("modelo"),
+                        rs.getString("matricula"),
+                        rs.getInt("plazas"),
+                        rs.getInt("pma")
+                );
+
+                case "AUTOBUS" -> vehiculo = new Autobus(
+                        rs.getString("marca"),
+                        rs.getString("modelo"),
+                        rs.getString("matricula"),
+                        rs.getInt("plazas")
+                );
+
+                default -> throw new DomainException("Tipo de vehículo desconocido: " + tipo);
+            }
+
+            // Crear Alquiler
+            return (fechaDevolucion == null)
+                    ? new Alquiler(id, cliente, vehiculo, fechaAlquiler)
+                    : new Alquiler(id, cliente, vehiculo, fechaAlquiler, fechaDevolucion);
+
+        } catch (SQLException e) {
+            throw new DomainException("Error al convertir ResultSet en Alquiler: " + e.getMessage());
+        }
     }
+
 }

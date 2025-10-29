@@ -3,50 +3,54 @@ package org.rubennicolas.alquilervehiculos.modelo.negocio.ficheros;
 import org.rubennicolas.alquilervehiculos.excepciones.DomainException;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Cliente;
 import org.rubennicolas.alquilervehiculos.modelo.negocio.IClientes;
-import org.rubennicolas.alquilervehiculos.modelo.negocio.utilidades.UtilidadesXml;
+import org.rubennicolas.alquilervehiculos.modelo.negocio.utilidades.UtilidadesFicheros;
 
 import javax.naming.OperationNotSupportedException;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class Clientes implements IClientes {
 
-    private static Clientes instancia;
-    private static List<Cliente> coleccionClientes;
+    private final List<Cliente> coleccionClientes;
+    private final Supplier<List<Cliente>> lector;
+    private final Consumer<List<Cliente>> escritor;
 
-    private Clientes() {
-
-        coleccionClientes = new ArrayList<>();
-        coleccionClientes = UtilidadesXml.leerXmlClientes();
+    // --- Constructor de producción ---
+    public Clientes() {
+        this(UtilidadesFicheros::leerXmlClientes, UtilidadesFicheros::escribirXmlClientes);
     }
 
-    public static Clientes getInstancia() {
+    // --- Constructor de test (inyección de dependencias) ---
+    public Clientes(Supplier<List<Cliente>> lector, Consumer<List<Cliente>> escritor) {
+        this.lector = lector;
+        this.escritor = escritor;
+        this.coleccionClientes = new ArrayList<>();
 
-        if (instancia == null) {
-            instancia = new Clientes(); // Crear la instancia sólo si aún no se ha creado
+        try {
+            List<Cliente> clientesLeidos = lector.get();
+            coleccionClientes.addAll(clientesLeidos);
+        } catch (Exception e) {
+            throw new DomainException("Error al leer los clientes: " + e.getMessage());
         }
-        return instancia;
     }
 
     @Override
     public void comenzar() {
-        getInstancia();
+        // No hace nada: ya se inicializa al construir la clase
     }
 
     @Override
     public List<Cliente> getClientes() {
-        return coleccionClientes
-                .stream()
+        return coleccionClientes.stream()
                 .sorted(Comparator.comparing(Cliente::getNombreApellidos))
                 .toList();
     }
 
     @Override
     public Cliente buscarCliente(Cliente cliente) {
-
         if (cliente == null) {
             throw new NullPointerException("No se puede buscar un cliente nulo.");
         }
@@ -59,11 +63,11 @@ public class Clientes implements IClientes {
 
     @Override
     public void insertarCliente(Cliente cliente) {
-
         try {
             if (cliente == null) {
                 throw new NullPointerException("No se puede insertar un cliente nulo.");
-            } else if (coleccionClientes.contains(cliente)) {
+            }
+            if (coleccionClientes.contains(cliente)) {
                 throw new OperationNotSupportedException("Ya existe un cliente con ese DNI.");
             }
             coleccionClientes.add(cliente);
@@ -74,7 +78,6 @@ public class Clientes implements IClientes {
 
     @Override
     public void modificarCliente(Cliente cliente) {
-
         Cliente clienteBuscado = buscarCliente(cliente);
 
         try {
@@ -86,11 +89,15 @@ public class Clientes implements IClientes {
                 throw new OperationNotSupportedException("No existe ningún cliente con ese DNI.");
             }
 
-            if (cliente.getNombreApellidos() != null && cliente.getTelefono() != null && cliente.getEmail() != null) {
+            if (cliente.getNombreApellidos() != null &&
+                    cliente.getTelefono() != null &&
+                    cliente.getEmail() != null) {
+
                 clienteBuscado.setNombreApellidos(cliente.getNombreApellidos());
                 clienteBuscado.setTelefono(cliente.getTelefono());
                 clienteBuscado.setEmail(cliente.getEmail());
             }
+
         } catch (Exception e) {
             throw new DomainException(e.getMessage());
         }
@@ -105,13 +112,10 @@ public class Clientes implements IClientes {
                 throw new NullPointerException("No se puede borrar un cliente nulo.");
             }
 
-            int indice = coleccionClientes.indexOf(clienteBuscado);
-
-            if (indice == -1) {
+            if (!coleccionClientes.remove(clienteBuscado)) {
                 throw new OperationNotSupportedException("No existe ningún cliente con ese DNI.");
-            } else {
-                coleccionClientes.remove(clienteBuscado);
             }
+
         } catch (NullPointerException | OperationNotSupportedException e) {
             throw new DomainException(e.getMessage());
         }
@@ -120,9 +124,9 @@ public class Clientes implements IClientes {
     @Override
     public void terminar() {
         try {
-            UtilidadesXml.escribirXmlClientes(coleccionClientes);
-        } catch (ParserConfigurationException | TransformerException e) {
-            throw new DomainException(e.getMessage());
+            escritor.accept(coleccionClientes);
+        } catch (Exception e) {
+            throw new DomainException("Error al escribir los clientes: " + e.getMessage());
         }
     }
 }

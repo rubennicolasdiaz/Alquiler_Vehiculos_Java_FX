@@ -16,22 +16,25 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.rubennicolas.alquilervehiculos.AppContextThread;
 import org.rubennicolas.alquilervehiculos.controlador.Controlador;
 import org.rubennicolas.alquilervehiculos.excepciones.DomainException;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Autobus;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Furgoneta;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Turismo;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Vehiculo;
-import org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.RutasConstantes;
+import org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.RutasConstantesFxml;
+import org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.RutasConstantesImagenes;
 import org.rubennicolas.alquilervehiculos.vista.texto.TipoVehiculo;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
-public class ControllerVistaVehiculos implements Initializable {
+import static org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.EstilosConstantes.STYLE_COLUMN;
+
+public class ControllerVistaVehiculos extends ControllerVistaPrincipal implements Initializable {
 
     @FXML
     private TextField campoBuscar;
@@ -66,15 +69,41 @@ public class ControllerVistaVehiculos implements Initializable {
 
     protected Vehiculo vehiculo;
 
+    private Controlador controlador;
+
+    @Override
+    public void setControlador(Controlador controlador) {
+        this.controlador = controlador;
+    }
+
+    public Controlador getControlador() {
+        return controlador;
+    }
+
     @Override
     public void initialize(URL arg0, ResourceBundle arg1) {
 
         try {
+            Controlador controladorOriginal = AppContextThread.getControlador();
+            if (controladorOriginal == null) {
+                System.err.println("[ERROR] No se pudo obtener el controlador desde AppContextThread.");
+            } else {
+                this.controlador = controladorOriginal;
+
+                this.controlador.setVista(this);
+
+
+                controlador.getVista().setControlador(controlador);
+
+                controlador.getModelo().comenzar();
+                System.out.println("[INFO] Controlador inyectado correctamente en ControllerVistaPrincipal.");
+            }
+
             listaVehiculos = FXCollections.observableArrayList();
-            listaVehiculos.setAll(Controlador.getInstancia().getVehiculos());
+            listaVehiculos.setAll(getControlador().getVehiculos());
 
             listaVehiculosVisible = FXCollections.observableArrayList();
-            listaVehiculosVisible.setAll(Controlador.getInstancia().getVehiculos());
+            listaVehiculosVisible.setAll(getControlador().getVehiculos());
 
             colMarca.setCellValueFactory(new PropertyValueFactory<>("marca"));
             colModelo.setCellValueFactory(new PropertyValueFactory<>("modelo"));
@@ -117,13 +146,13 @@ public class ControllerVistaVehiculos implements Initializable {
 
 
             //Estilo de elementos de columnas:
-            colTipoVehiculo.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-            colMarca.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-            colModelo.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-            colMatricula.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-            colCilindrada.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-            colNumPlazas.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-            colNumPma.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
+            colTipoVehiculo.setStyle(STYLE_COLUMN);
+            colMarca.setStyle(STYLE_COLUMN);
+            colModelo.setStyle(STYLE_COLUMN);
+            colMatricula.setStyle(STYLE_COLUMN);
+            colCilindrada.setStyle(STYLE_COLUMN);
+            colNumPlazas.setStyle(STYLE_COLUMN);
+            colNumPma.setStyle(STYLE_COLUMN);
         } catch (
                 DomainException e) {
             Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -138,7 +167,7 @@ public class ControllerVistaVehiculos implements Initializable {
     void addVehiculo() {
 
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistasfxml/VistaAddVehiculos.fxml"));
+            FXMLLoader loader = new FXMLLoader(RutasConstantesFxml.get(RutasConstantesFxml.VISTA_ADD_VEHICULOS));
             Parent root = loader.load();
 
             ControllerAddVehiculos controlador = loader.getController();
@@ -147,7 +176,7 @@ public class ControllerVistaVehiculos implements Initializable {
             Scene scene = new Scene(root);
             Stage stage = new Stage();
 
-            Image icono = new Image(Objects.requireNonNull(getClass().getResource(RutasConstantes.COCHE_ALQUILER)).toExternalForm());
+            Image icono = RutasConstantesImagenes.loadImage(RutasConstantesImagenes.COCHE_ALQUILER);
             stage.getIcons().add(icono);
 
             stage.setTitle("Añadir Vehículo");
@@ -194,7 +223,7 @@ public class ControllerVistaVehiculos implements Initializable {
 
             try {
                 // Cargo la vista
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistasfxml/VistaEditVehiculos.fxml"));
+                FXMLLoader loader = new FXMLLoader(RutasConstantesFxml.get(RutasConstantesFxml.VISTA_EDIT_VEHICULOS));
 
                 // Cargo la ventana
                 Parent root = loader.load();
@@ -219,7 +248,7 @@ public class ControllerVistaVehiculos implements Initializable {
                 Scene scene = new Scene(root);
                 Stage stage = new Stage();
 
-                Image icono = new Image(Objects.requireNonNull(getClass().getResource(RutasConstantes.COCHE_ALQUILER)).toExternalForm());
+                Image icono = RutasConstantesImagenes.loadImage(RutasConstantesImagenes.COCHE_ALQUILER);
                 stage.getIcons().add(icono);
 
                 stage.setTitle("Modificar Vehículo");
@@ -231,7 +260,7 @@ public class ControllerVistaVehiculos implements Initializable {
                 Vehiculo vehiculoSeleccionado = controlador.getVehiculo();
 
                 if (vehiculoSeleccionado != null) {
-                    Controlador.getInstancia().modificarVehiculo(vehiculoSeleccionado);
+                    getControlador().modificarVehiculo(vehiculoSeleccionado);
                     this.tablaVehiculos.refresh();
 
                 }
@@ -252,8 +281,7 @@ public class ControllerVistaVehiculos implements Initializable {
         try {
 
             // Cargo la vista
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(
-                    "/vistasfxml/VistaVehiculoAlquiler.fxml"));
+            FXMLLoader loader = new FXMLLoader(RutasConstantesFxml.get(RutasConstantesFxml.VISTA_VEHICULO_ALQUILER));
 
             // Cargo la ventana
             Parent root = loader.load();
@@ -262,7 +290,7 @@ public class ControllerVistaVehiculos implements Initializable {
             Scene scene = new Scene(root);
             Stage stage = new Stage();
 
-            Image icono = new Image(Objects.requireNonNull(getClass().getResource(RutasConstantes.COCHE_ALQUILER)).toExternalForm());
+            Image icono = RutasConstantesImagenes.loadImage(RutasConstantesImagenes.COCHE_ALQUILER);
             stage.getIcons().add(icono);
 
             stage.setTitle("Ver Alquileres Vehículo");
@@ -336,7 +364,7 @@ public class ControllerVistaVehiculos implements Initializable {
                 this.listaVehiculos.remove(vehiculo);
                 this.listaVehiculosVisible.remove(vehiculo);
 
-                Controlador.getInstancia().borrarVehiculo(vehiculo);
+                getControlador().borrarVehiculo(vehiculo);
 
                 // Crear y mostrar alerta de confirmación
                 Alert confirmacion = new Alert(Alert.AlertType.INFORMATION);

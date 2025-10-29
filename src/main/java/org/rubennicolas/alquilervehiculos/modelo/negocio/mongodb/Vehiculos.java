@@ -1,6 +1,6 @@
 package org.rubennicolas.alquilervehiculos.modelo.negocio.mongodb;
 
-
+import com.mongodb.MongoException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
@@ -17,43 +17,49 @@ import org.rubennicolas.alquilervehiculos.vista.texto.TipoVehiculo;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Vehiculos implements IVehiculos {
 
-    private static Vehiculos instancia;
     private final MongoCollection<Document> coleccion;
 
-    private Vehiculos() {
-        ConexionMongoDB conexion = new ConexionMongoDB();
-        MongoDatabase database = conexion.abrirConexion();
-        this.coleccion = database.getCollection("vehiculos");
+    // --- Constructor de producción (usa conexión real) ---
+    public Vehiculos() {
+        try {
+            ConexionMongoDB conexion = new ConexionMongoDB();
+            MongoDatabase database = conexion.abrirConexion();
+            this.coleccion = database.getCollection("vehiculos");
+        } catch (Exception e) {
+            throw new MongoException("Error al conectar con MongoDB: " + e.getMessage());
+        }
     }
 
-    public static Vehiculos getInstancia() {
-        if (instancia == null) {
-            instancia = new Vehiculos();
-        }
-        return instancia;
+    // --- Constructor alternativo para testing (colección mock) ---
+    public Vehiculos(MongoCollection<Document> coleccion) {
+        this.coleccion = coleccion;
     }
 
     @Override
     public void comenzar() {
-        getInstancia();
+        // Nada que hacer; conexión lista
     }
 
     @Override
     public List<Vehiculo> getVehiculos() {
-        List<Vehiculo> vehiculos = new ArrayList<>();
+        try {
+            List<Vehiculo> vehiculos = new ArrayList<>();
+            for (Document doc : coleccion.find()) {
+                vehiculos.add(documentToVehiculo(doc));
+            }
 
-        for (Document doc : coleccion.find()) {
-            Vehiculo vehiculo = documentToVehiculo(doc);
-            vehiculos.add(vehiculo);
+            return vehiculos.stream()
+                    .sorted(Comparator.comparing(Vehiculo::getMarca)
+                            .thenComparing(Vehiculo::getModelo))
+                    .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            throw new DomainException("Error al obtener vehículos de MongoDB: " + e.getMessage());
         }
-
-        return vehiculos.stream()
-                .sorted(Comparator.comparing(Vehiculo::getMarca)
-                        .thenComparing(Vehiculo::getModelo))
-                .toList();
     }
 
     @Override
@@ -63,7 +69,6 @@ public class Vehiculos implements IVehiculos {
         }
 
         Document doc = coleccion.find(Filters.eq("matricula", vehiculo.getMatricula())).first();
-
         return (doc != null) ? documentToVehiculo(doc) : null;
     }
 
@@ -73,14 +78,15 @@ public class Vehiculos implements IVehiculos {
             throw new NullPointerException("No se puede insertar un vehículo nulo.");
         }
 
-        Vehiculo existente = buscarVehiculo(vehiculo);
-        if (existente != null) {
+        if (buscarVehiculo(vehiculo) != null) {
             throw new DomainException("Ya existe un vehículo con esa matrícula.");
         }
 
-        Document doc = vehiculoToDocument(vehiculo);
-        coleccion.insertOne(doc);
-        System.out.println("Vehículo insertado en MongoDB.");
+        try {
+            coleccion.insertOne(vehiculoToDocument(vehiculo));
+        } catch (Exception e) {
+            throw new DomainException("Error al insertar vehículo en MongoDB: " + e.getMessage());
+        }
     }
 
     @Override
@@ -89,14 +95,18 @@ public class Vehiculos implements IVehiculos {
             throw new NullPointerException("No se puede modificar un vehículo nulo.");
         }
 
-        Vehiculo existente = buscarVehiculo(vehiculo);
-        if (existente == null) {
-            throw new IllegalArgumentException("No existe ningún vehículo con esa matrícula.");
+        if (buscarVehiculo(vehiculo) == null) {
+            throw new DomainException("No existe ningún vehículo con esa matrícula.");
         }
 
-        Document doc = vehiculoToDocument(vehiculo);
-        coleccion.replaceOne(Filters.eq("matricula", vehiculo.getMatricula()), doc);
-        System.out.println("Vehículo modificado en MongoDB.");
+        try {
+            coleccion.replaceOne(
+                    Filters.eq("matricula", vehiculo.getMatricula()),
+                    vehiculoToDocument(vehiculo)
+            );
+        } catch (Exception e) {
+            throw new DomainException("Error al modificar vehículo en MongoDB: " + e.getMessage());
+        }
     }
 
     @Override
@@ -105,50 +115,62 @@ public class Vehiculos implements IVehiculos {
             throw new NullPointerException("No se puede borrar un vehículo nulo.");
         }
 
-        Vehiculo existente = buscarVehiculo(vehiculo);
-        if (existente == null) {
-            throw new IllegalArgumentException("No existe ningún vehículo con esa matrícula.");
+        if (buscarVehiculo(vehiculo) == null) {
+            throw new DomainException("No existe ningún vehículo con esa matrícula.");
         }
 
-        coleccion.deleteOne(Filters.eq("matricula", vehiculo.getMatricula()));
-        System.out.println("Vehículo borrado en MongoDB.");
+        try {
+            coleccion.deleteOne(Filters.eq("matricula", vehiculo.getMatricula()));
+        } catch (Exception e) {
+            throw new DomainException("Error al borrar vehículo en MongoDB: " + e.getMessage());
+        }
     }
 
     private Vehiculo documentToVehiculo(Document doc) {
-        String marca = doc.getString("marca");
-        String modelo = doc.getString("modelo");
-        String matricula = doc.getString("matricula");
-        TipoVehiculo tipo = TipoVehiculo.valueOf(doc.getString("tipo_vehiculo"));
+        try {
+            String marca = doc.getString("marca");
+            String modelo = doc.getString("modelo");
+            String matricula = doc.getString("matricula");
+            TipoVehiculo tipo = TipoVehiculo.valueOf(doc.getString("tipo_vehiculo"));
 
-        return switch (tipo) {
-            case TURISMO -> new Turismo(marca, modelo, matricula, doc.getInteger("cilindrada"));
-            case FURGONETA -> new Furgoneta(marca, modelo, matricula,
-                    doc.getInteger("plazas"),
-                    doc.getInteger("pma"));
-            case AUTOBUS -> new Autobus(marca, modelo, matricula, doc.getInteger("plazas"));
-        };
+            return switch (tipo) {
+                case TURISMO -> new Turismo(marca, modelo, matricula, doc.getInteger("cilindrada"));
+                case FURGONETA -> new Furgoneta(
+                        marca, modelo, matricula,
+                        doc.getInteger("plazas"),
+                        doc.getInteger("pma")
+                );
+                case AUTOBUS -> new Autobus(marca, modelo, matricula, doc.getInteger("plazas"));
+            };
+        } catch (Exception e) {
+            throw new DomainException("Error al convertir documento a vehículo: " + e.getMessage());
+        }
     }
 
     private Document vehiculoToDocument(Vehiculo vehiculo) {
-        Document doc = new Document("marca", vehiculo.getMarca())
-                .append("modelo", vehiculo.getModelo())
-                .append("matricula", vehiculo.getMatricula())
-                .append("tipo_vehiculo", vehiculo.getTipoVehiculo().name());
+        try {
+            Document doc = new Document("marca", vehiculo.getMarca())
+                    .append("modelo", vehiculo.getModelo())
+                    .append("matricula", vehiculo.getMatricula())
+                    .append("tipo_vehiculo", vehiculo.getTipoVehiculo().name());
 
-        if (vehiculo instanceof Turismo turismo) {
-            doc.append("cilindrada", turismo.getCilindrada());
-        } else if (vehiculo instanceof Furgoneta furgoneta) {
-            doc.append("plazas", furgoneta.getPlazas())
-                    .append("pma", furgoneta.getPma());
-        } else if (vehiculo instanceof Autobus autobus) {
-            doc.append("plazas", autobus.getPlazas());
+            if (vehiculo instanceof Turismo turismo) {
+                doc.append("cilindrada", turismo.getCilindrada());
+            } else if (vehiculo instanceof Furgoneta furgoneta) {
+                doc.append("plazas", furgoneta.getPlazas())
+                        .append("pma", furgoneta.getPma());
+            } else if (vehiculo instanceof Autobus autobus) {
+                doc.append("plazas", autobus.getPlazas());
+            }
+
+            return doc;
+        } catch (Exception e) {
+            throw new DomainException("Error al convertir vehículo a documento: " + e.getMessage());
         }
-
-        return doc;
     }
 
     @Override
     public void terminar() {
-
+        // No es necesario cerrar conexión (MongoDriver lo gestiona)
     }
 }

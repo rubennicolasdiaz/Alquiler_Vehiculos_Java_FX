@@ -1,0 +1,78 @@
+version: '3.9'
+
+services:
+  app:
+    build: .
+    container_name: alquilervehiculos_app
+
+    # 🧠 Variables de entorno para las configuraciones y conexiones
+    environment:
+      # MongoDB
+      MONGO_HOST: mongo
+      MONGO_PORT: 27017
+      MONGO_SCHEMA: alquiler_vehiculos
+      MONGO_USER: root
+      MONGO_PASS: root
+      MONGO_CONFIG_FILE: /app/config/mongo.properties
+
+      # MySQL
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASS: root
+      MYSQL_SCHEMA: alquiler_vehiculos
+      MYSQL_CONFIG_FILE: /app/config/mysql.properties
+
+      # Ficheros locales
+      FICHEROS_CONFIG_FILE: /app/config/ficheros.properties
+      XML_BASE_PATH: /app/data/xml
+
+      # Config global para tu app
+      APP_DATASOURCE: ficheros   # (puedes cambiar a: ficheros | mongodb | mysql)
+      APP_VIEW: texto            # (puedes cambiar a: texto | grafica)
+
+      # 🔥 Soporte GUI — necesario para Swing/JavaFX
+      DISPLAY: ${DISPLAY}        # Hereda el DISPLAY del host
+      TZ: Europe/Madrid          # Ajuste horario
+
+    # 🧩 Montaje de volúmenes
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
+      - /tmp/.X11-unix:/tmp/.X11-unix  # 🔥 Conecta X11 del host para mostrar GUI
+
+    # 🔗 Dependencias
+    depends_on:
+      - mongo
+      - mysql
+
+    # 📡 No expones puertos (solo si usas HTTP o API)
+    # ports:
+    #   - "8080:8080"
+
+    stdin_open: true
+    tty: true
+
+  # 🟢 MongoDB
+  mongo:
+    image: mongo:7.0
+    container_name: alquilervehiculos_mongo
+    environment:
+      MONGO_INITDB_DATABASE: alquiler_vehiculos
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo_data:/data/db
+
+  # 🟠 MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: alquilervehiculos_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: alquiler_vehiculos
+      TZ: Europe/Madrid
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql_data:/var/lib/mysql

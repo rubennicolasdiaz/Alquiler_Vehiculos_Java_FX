@@ -1,10 +1,12 @@
 package org.rubennicolas.alquilervehiculos.vista;
 
-import javafx.application.Application;
+import org.rubennicolas.alquilervehiculos.controlador.Controlador;
 
-public abstract class Vista extends Application {
+public interface Vista {
 
-    public abstract void comenzar();
+    void comenzar();
 
-    public abstract void terminar();
+    void setControlador(Controlador controlador);
+
+    void terminar();
 }

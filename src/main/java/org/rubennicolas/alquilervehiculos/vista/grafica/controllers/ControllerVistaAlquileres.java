@@ -15,22 +15,25 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.rubennicolas.alquilervehiculos.AppContextThread;
 import org.rubennicolas.alquilervehiculos.controlador.Controlador;
 import org.rubennicolas.alquilervehiculos.excepciones.DomainException;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Alquiler;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Cliente;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Vehiculo;
-import org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.RutasConstantes;
+import org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.RutasConstantesFxml;
+import org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.RutasConstantesImagenes;
 
 import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
-public class ControllerVistaAlquileres implements Initializable {
+import static org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.EstilosConstantes.STYLE_COLUMN;
+
+public class ControllerVistaAlquileres extends ControllerVistaPrincipal implements Initializable {
 
     @FXML
     private TextField campoBuscar;
@@ -64,15 +67,41 @@ public class ControllerVistaAlquileres implements Initializable {
 
     protected static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
+    private Controlador controlador;
+
+    @Override
+    public void setControlador(Controlador controlador) {
+        this.controlador = controlador;
+    }
+
+    public Controlador getControlador() {
+        return controlador;
+    }
+
     @Override
     public void initialize(URL arg0, ResourceBundle arg1) {
 
         try {
+            Controlador controladorOriginal = AppContextThread.getControlador();
+            if (controladorOriginal == null) {
+                System.err.println("[ERROR] No se pudo obtener el controlador desde AppContextThread.");
+            } else {
+                this.controlador = controladorOriginal;
+
+                this.controlador.setVista(this);
+
+
+                controlador.getVista().setControlador(controlador);
+
+                controlador.getModelo().comenzar();
+                System.out.println("[INFO] Controlador inyectado correctamente en ControllerVistaPrincipal.");
+            }
+
             listaAlquileres = FXCollections.observableArrayList();
-            listaAlquileres.setAll(Controlador.getInstancia().getAlquileres());
+            listaAlquileres.setAll(getControlador().getAlquileres());
 
             listaAlquileresVisible = FXCollections.observableArrayList();
-            listaAlquileresVisible.setAll(Controlador.getInstancia().getAlquileres());
+            listaAlquileresVisible.setAll(getControlador().getAlquileres());
 
             this.colCliente.setCellValueFactory(new PropertyValueFactory<>("cliente"));
             this.colVehiculo.setCellValueFactory(new PropertyValueFactory<>("vehiculo"));
@@ -85,12 +114,12 @@ public class ControllerVistaAlquileres implements Initializable {
             colDibujoVehiculo.setCellFactory(columna -> new TipoVehiculoTableCell());
 
             //Estilo de elementos de columnas:
-            colCliente.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-            colVehiculo.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-            colDibujoVehiculo.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-            colFechaAlquiler.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-            colFechaDevolucion.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-            colGetPrecio.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
+            colCliente.setStyle(STYLE_COLUMN);
+            colVehiculo.setStyle(STYLE_COLUMN);
+            colDibujoVehiculo.setStyle(STYLE_COLUMN);
+            colFechaAlquiler.setStyle(STYLE_COLUMN);
+            colFechaDevolucion.setStyle(STYLE_COLUMN);
+            colGetPrecio.setStyle(STYLE_COLUMN);
 
             this.colFechaAlquiler.setCellFactory(col -> new TableCell<>() {
                 @Override
@@ -133,7 +162,9 @@ public class ControllerVistaAlquileres implements Initializable {
 
         try {
             // Se carga la vista:
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistasfxml/VistaAddAlquileres.fxml"));
+            FXMLLoader loader = new FXMLLoader(
+                    RutasConstantesFxml.get(RutasConstantesFxml.VISTA_ADD_ALQUILERES)
+            );
 
             // Se carga la ventana:
             Parent root = loader.load();
@@ -146,7 +177,8 @@ public class ControllerVistaAlquileres implements Initializable {
             Scene scene = new Scene(root);
             Stage stage = new Stage();
 
-            Image icono = new Image(Objects.requireNonNull(getClass().getResource(RutasConstantes.COCHE_ALQUILER)).toExternalForm());
+            Image icono = RutasConstantesImagenes.loadImage(RutasConstantesImagenes.COCHE_ALQUILER);
+
             stage.getIcons().add(icono);
 
             stage.setTitle("Añadir Alquiler");
@@ -212,7 +244,8 @@ public class ControllerVistaAlquileres implements Initializable {
         }
 
         // Cargar vista devolver alquiler
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistasfxml/VistaDevolverAlquileres.fxml"));
+        FXMLLoader loader = new FXMLLoader(
+                RutasConstantesFxml.get(RutasConstantesFxml.VISTA_DEVOLVER_ALQUILERES));
         Parent root;
         try {
             root = loader.load();
@@ -225,7 +258,8 @@ public class ControllerVistaAlquileres implements Initializable {
 
         Scene scene = new Scene(root);
         Stage stage = new Stage();
-        stage.getIcons().add(new Image(Objects.requireNonNull(getClass().getResource(RutasConstantes.COCHE_ALQUILER)).toExternalForm()));
+        stage.getIcons().add(
+                RutasConstantesImagenes.loadImage(RutasConstantesImagenes.COCHE_ALQUILER));
         stage.setTitle("Devolver Alquiler");
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.setScene(scene);
@@ -273,7 +307,7 @@ public class ControllerVistaAlquileres implements Initializable {
                 this.listaAlquileres.remove(alquiler);
                 this.listaAlquileresVisible.remove(alquiler);
 
-                Controlador.getInstancia().borrarAlquiler(alquiler);
+                getControlador().borrarAlquiler(alquiler);
 
                 // Crear y mostrar alerta de confirmación
                 Alert confirmacion = new Alert(Alert.AlertType.INFORMATION);

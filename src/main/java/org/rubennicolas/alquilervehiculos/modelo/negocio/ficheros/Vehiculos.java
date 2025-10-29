@@ -6,47 +6,48 @@ import org.rubennicolas.alquilervehiculos.modelo.dominio.Furgoneta;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Turismo;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Vehiculo;
 import org.rubennicolas.alquilervehiculos.modelo.negocio.IVehiculos;
-import org.rubennicolas.alquilervehiculos.modelo.negocio.utilidades.UtilidadesXml;
+import org.rubennicolas.alquilervehiculos.modelo.negocio.utilidades.UtilidadesFicheros;
 
 import javax.naming.OperationNotSupportedException;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class Vehiculos implements IVehiculos {
 
-    private static Vehiculos instancia;
-    private static List<Vehiculo> coleccionVehiculos;
+    private final List<Vehiculo> coleccionVehiculos;
+    private final Supplier<List<Vehiculo>> lector;
+    private final Consumer<List<Vehiculo>> escritor;
 
-    private Vehiculos() {
-
-        try {
-            coleccionVehiculos = new ArrayList<>();
-            coleccionVehiculos = UtilidadesXml.leerXmlVehiculos();
-        } catch (Exception e) {
-            throw new DomainException(e.getMessage());
-        }
+    // --- Constructor de producción (usa XML real) ---
+    public Vehiculos() {
+        this(UtilidadesFicheros::leerXmlVehiculos, UtilidadesFicheros::escribirXmlVehiculos);
     }
 
-    public static Vehiculos getInstancia() {
+    // --- Constructor alternativo para TESTS ---
+    public Vehiculos(Supplier<List<Vehiculo>> lector, Consumer<List<Vehiculo>> escritor) {
+        this.lector = lector;
+        this.escritor = escritor;
+        this.coleccionVehiculos = new ArrayList<>();
 
-        if (instancia == null) {
-            instancia = new Vehiculos();
+        try {
+            List<Vehiculo> vehiculosLeidos = lector.get();
+            coleccionVehiculos.addAll(vehiculosLeidos);
+        } catch (Exception e) {
+            throw new DomainException("Error al leer los vehículos: " + e.getMessage());
         }
-        return instancia;
     }
 
     @Override
     public void comenzar() {
-        getInstancia();
+        // nada: ya se carga en el constructor
     }
 
     @Override
     public List<Vehiculo> getVehiculos() {
-        return coleccionVehiculos
-                .stream()
+        return coleccionVehiculos.stream()
                 .sorted(Comparator.comparing(Vehiculo::getMarca)
                         .thenComparing(Vehiculo::getModelo))
                 .toList();
@@ -54,12 +55,11 @@ public class Vehiculos implements IVehiculos {
 
     @Override
     public Vehiculo buscarVehiculo(Vehiculo vehiculo) {
-
-        if (vehiculo == null) {
+        if (vehiculo == null)
             throw new NullPointerException("No se puede buscar un vehículo nulo.");
-        }
+
         return coleccionVehiculos.stream()
-                .filter(vehi -> vehi.equals(vehiculo))
+                .filter(v -> v.equals(vehiculo))
                 .findFirst()
                 .orElse(null);
     }
@@ -69,50 +69,43 @@ public class Vehiculos implements IVehiculos {
         try {
             if (vehiculo == null) {
                 throw new NullPointerException("No se puede insertar un vehículo nulo.");
-            } else if ((coleccionVehiculos.contains(vehiculo))) {
+            }
+            if (coleccionVehiculos.contains(vehiculo)) {
                 throw new OperationNotSupportedException("Ya existe un vehículo con esa matrícula.");
             }
             coleccionVehiculos.add(vehiculo);
-        } catch (NullPointerException | OperationNotSupportedException e) {
+        } catch (Exception e) {
             throw new DomainException(e.getMessage());
         }
     }
 
     @Override
     public void modificarVehiculo(Vehiculo vehiculo) {
-
         Vehiculo vehiculoBuscado = buscarVehiculo(vehiculo);
 
         try {
             if (vehiculoBuscado == null) {
                 throw new NullPointerException("No se puede modificar un vehículo nulo.");
             }
-
             if (!coleccionVehiculos.contains(vehiculoBuscado)) {
                 throw new OperationNotSupportedException("No existe ningún vehículo con esa matrícula.");
             }
 
-            if (vehiculoBuscado instanceof Turismo turismo) {
-
-                turismo.setMarca(turismo.getMarca());
-                turismo.setModelo(turismo.getModelo());
-                turismo.setCilindrada(turismo.getCilindrada());
+            if (vehiculoBuscado instanceof Turismo turismo && vehiculo instanceof Turismo nuevoTurismo) {
+                turismo.setMarca(nuevoTurismo.getMarca());
+                turismo.setModelo(nuevoTurismo.getModelo());
+                turismo.setCilindrada(nuevoTurismo.getCilindrada());
+            } else if (vehiculoBuscado instanceof Furgoneta furgoneta && vehiculo instanceof Furgoneta nuevaFurgoneta) {
+                furgoneta.setMarca(nuevaFurgoneta.getMarca());
+                furgoneta.setModelo(nuevaFurgoneta.getModelo());
+                furgoneta.setPlazas(nuevaFurgoneta.getPlazas());
+                furgoneta.setPma(nuevaFurgoneta.getPma());
+            } else if (vehiculoBuscado instanceof Autobus autobus && vehiculo instanceof Autobus nuevoAutobus) {
+                autobus.setMarca(nuevoAutobus.getMarca());
+                autobus.setModelo(nuevoAutobus.getModelo());
+                autobus.setPlazas(nuevoAutobus.getPlazas());
             }
 
-            if (vehiculoBuscado instanceof Furgoneta furgoneta) {
-
-                furgoneta.setMarca(furgoneta.getMarca());
-                furgoneta.setModelo(furgoneta.getModelo());
-                furgoneta.setPlazas(furgoneta.getPlazas());
-                furgoneta.setPma(furgoneta.getPma());
-            }
-
-            if (vehiculoBuscado instanceof Autobus autobus) {
-
-                autobus.setMarca(autobus.getMarca());
-                autobus.setModelo(autobus.getModelo());
-                autobus.setPlazas(autobus.getPlazas());
-            }
         } catch (Exception e) {
             throw new DomainException(e.getMessage());
         }
@@ -120,18 +113,15 @@ public class Vehiculos implements IVehiculos {
 
     @Override
     public void borrarVehiculo(Vehiculo vehiculo) {
-
-        Vehiculo vehiculoBuscado = buscarVehiculo(vehiculo);
         try {
-            if (vehiculoBuscado == null) {
+            Vehiculo vehiculoBuscado = buscarVehiculo(vehiculo);
+            if (vehiculoBuscado == null)
                 throw new NullPointerException("No se puede borrar un vehículo nulo.");
-            }
-            if (!coleccionVehiculos.contains(vehiculoBuscado)) {
+
+            if (!coleccionVehiculos.remove(vehiculoBuscado)) {
                 throw new OperationNotSupportedException("No existe ningún vehículo con esa matrícula.");
-            } else {
-                coleccionVehiculos.remove(vehiculoBuscado);
             }
-        } catch (NullPointerException | OperationNotSupportedException e) {
+        } catch (Exception e) {
             throw new DomainException(e.getMessage());
         }
     }
@@ -139,9 +129,9 @@ public class Vehiculos implements IVehiculos {
     @Override
     public void terminar() {
         try {
-            UtilidadesXml.escribirXmlVehiculos(coleccionVehiculos);
-        } catch (TransformerException | ParserConfigurationException e) {
-            throw new DomainException(e.getMessage());
+            escritor.accept(coleccionVehiculos);
+        } catch (Exception e) {
+            throw new DomainException("Error al guardar los vehículos: " + e.getMessage());
         }
     }
 }

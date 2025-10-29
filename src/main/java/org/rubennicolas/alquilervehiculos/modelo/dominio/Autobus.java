@@ -21,8 +21,8 @@ public class Autobus extends Vehiculo {
 
     public Autobus(Autobus autobus) {
 
-        super(autobus.getMarca(), autobus.getModelo(), autobus.getMatricula());
-        setPlazas(autobus.getPlazas());
+        this(autobus.getMarca(), autobus.getModelo(), autobus.getMatricula(), autobus.getPlazas());
+        this.tipoVehiculo = TipoVehiculo.AUTOBUS;
     }
 
     public int getPlazas() {
@@ -39,6 +39,11 @@ public class Autobus extends Vehiculo {
             throw new IllegalArgumentException("El número de plazas no es correcto. Debe estar entre 1 y 50.");
         }
         this.plazas = plazas;
+    }
+
+    @Override
+    public Vehiculo clonar() {
+        return new Autobus(this);
     }
 
     @Override

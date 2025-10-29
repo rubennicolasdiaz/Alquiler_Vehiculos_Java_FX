@@ -7,6 +7,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import org.rubennicolas.alquilervehiculos.AppContextThread;
 import org.rubennicolas.alquilervehiculos.controlador.Controlador;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Alquiler;
 
@@ -33,9 +34,34 @@ public class ControllerDevolverAlquileres extends ControllerVistaAlquileres {
     @FXML
     private Button buttonGuardar;
 
+    private Controlador controlador;
+
+    @Override
+    public void setControlador(Controlador controlador) {
+        this.controlador = controlador;
+    }
+
+    public Controlador getControlador() {
+        return controlador;
+    }
+
     @Override
     public void initialize(URL url, ResourceBundle rb) {
 
+        Controlador controladorOriginal = AppContextThread.getControlador();
+        if (controladorOriginal == null) {
+            System.err.println("[ERROR] No se pudo obtener el controlador desde AppContextThread.");
+        } else {
+            this.controlador = controladorOriginal;
+
+            this.controlador.setVista(this);
+
+
+            controlador.getVista().setControlador(controlador);
+
+            controlador.getModelo().comenzar();
+            System.out.println("[INFO] Controlador inyectado correctamente en ControllerVistaPrincipal.");
+        }
     }
 
     public void initAtributtes(ObservableList<Alquiler> listaAlquileres, Alquiler alquiler) {
@@ -69,7 +95,7 @@ public class ControllerDevolverAlquileres extends ControllerVistaAlquileres {
                 return;
             }
             // Se valida y devuelve el alquiler
-            Controlador.getInstancia().devolverAlquiler(this.alquiler, fechaDevolucion);
+            getControlador().devolverAlquiler(this.alquiler, fechaDevolucion);
 
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setHeaderText(null);

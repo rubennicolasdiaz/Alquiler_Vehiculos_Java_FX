@@ -1,12 +1,9 @@
 package org.rubennicolas.alquilervehiculos.controlador;
 
-import org.rubennicolas.alquilervehiculos.modelo.FactoriaFuenteDatos;
 import org.rubennicolas.alquilervehiculos.modelo.Modelo;
-import org.rubennicolas.alquilervehiculos.modelo.ModeloCascada;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Alquiler;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Cliente;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Vehiculo;
-import org.rubennicolas.alquilervehiculos.vista.FactoriaVistas;
 import org.rubennicolas.alquilervehiculos.vista.Vista;
 
 import java.time.LocalDate;
@@ -14,21 +11,28 @@ import java.util.List;
 
 public class Controlador {
 
-    private final Modelo modelo;
-    private final Vista vista;
+    private Modelo modelo;
+    private Vista vista;
 
-    private static Controlador instancia;
-
-    public Controlador(FactoriaFuenteDatos fuenteDatos, FactoriaVistas factoriaVistas) {
-
-        this.modelo = new ModeloCascada(fuenteDatos);
-        this.vista = factoriaVistas.crear();
-
-        instancia = this;
+    public Controlador(Modelo modelo, Vista vista) {
+        this.modelo = modelo;
+        this.vista = vista;
     }
 
-    public static Controlador getInstancia() {
-        return instancia;
+    public void setVista(Vista vista) {
+        this.vista = vista;
+    }
+
+    public void setModelo(Modelo modelo) {
+        this.modelo = modelo;
+    }
+
+    public Modelo getModelo() {
+        return modelo;
+    }
+
+    public Vista getVista() {
+        return vista;
     }
 
     public void comenzar() {
@@ -38,6 +42,7 @@ public class Controlador {
 
     public void terminar() {
         modelo.terminar();
+        vista.terminar();
     }
 
     public void insertarCliente(Cliente cliente) {

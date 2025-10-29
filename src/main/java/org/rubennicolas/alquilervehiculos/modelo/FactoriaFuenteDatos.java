@@ -2,7 +2,6 @@ package org.rubennicolas.alquilervehiculos.modelo;
 
 import org.rubennicolas.alquilervehiculos.modelo.negocio.IFuenteDatos;
 import org.rubennicolas.alquilervehiculos.modelo.negocio.ficheros.FuenteDatosFicheros;
-import org.rubennicolas.alquilervehiculos.modelo.negocio.memoria.FuenteDatosMemoria;
 import org.rubennicolas.alquilervehiculos.modelo.negocio.mongodb.FuenteDatosMongoDB;
 import org.rubennicolas.alquilervehiculos.modelo.negocio.mysql.FuenteDatosMySQL;
 
@@ -36,12 +35,6 @@ public enum FactoriaFuenteDatos {
      * diferentes ficheros XML.
      */
 
-    MEMORIA {
-        @Override
-        IFuenteDatos crear() {
-            return new FuenteDatosMemoria();
-        }
-    },
     FICHEROS {
         @Override
         IFuenteDatos crear() {

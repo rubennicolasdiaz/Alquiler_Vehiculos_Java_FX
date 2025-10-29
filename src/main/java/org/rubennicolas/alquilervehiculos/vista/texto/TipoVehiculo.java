@@ -2,7 +2,7 @@ package org.rubennicolas.alquilervehiculos.vista.texto;
 
 public enum TipoVehiculo {
 
-    TURISMO("Turismo"), AUTOBUS("Autobús"), FURGONETA("Furgoneta");
+    TURISMO("TURISMO"), AUTOBUS("AUTOBUS"), FURGONETA("FURGONETA");
 
     private final String nombre;
 
@@ -11,7 +11,7 @@ public enum TipoVehiculo {
     }
 
     public static boolean esOrdinalValido(int ordinal) {
-        return (ordinal >= 0 && ordinal <= Accion.values().length - 1);
+        return (ordinal >= 0 && ordinal <= TipoVehiculo.values().length - 1);
     }
 
     public static TipoVehiculo get(int ordinal) {
@@ -25,9 +25,9 @@ public enum TipoVehiculo {
     @Override
     public String toString() {
         return switch (this) {
-            case TURISMO -> "Turismo";
-            case AUTOBUS -> "Autobús";
-            case FURGONETA -> "Furgoneta";
+            case TURISMO -> "TURISMO";
+            case AUTOBUS -> "AUTOBUS";
+            case FURGONETA -> "FURGONETA";
         };
     }
 }

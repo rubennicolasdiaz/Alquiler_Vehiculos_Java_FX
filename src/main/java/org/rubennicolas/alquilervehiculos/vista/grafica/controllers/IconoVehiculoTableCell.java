@@ -1,13 +1,10 @@
 package org.rubennicolas.alquilervehiculos.vista.grafica.controllers;
 
 import javafx.scene.control.TableCell;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import org.rubennicolas.alquilervehiculos.modelo.dominio.Vehiculo;
-import org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.RutasConstantes;
+import org.rubennicolas.alquilervehiculos.vista.grafica.rutasconstantes.RutasConstantesImagenes;
 import org.rubennicolas.alquilervehiculos.vista.texto.TipoVehiculo;
-
-import java.util.Objects;
 
 public class IconoVehiculoTableCell extends TableCell<Vehiculo, TipoVehiculo> {
 
@@ -24,13 +21,13 @@ public class IconoVehiculoTableCell extends TableCell<Vehiculo, TipoVehiculo> {
             ImageView icono = new ImageView();
 
             if (tipoVehiculo == TipoVehiculo.TURISMO) {
-                icono.setImage(new Image(Objects.requireNonNull(getClass().getResource(RutasConstantes.COCHE)).toExternalForm()));
+                icono.setImage(RutasConstantesImagenes.loadImage(RutasConstantesImagenes.COCHE));
 
             } else if (tipoVehiculo == TipoVehiculo.FURGONETA) {
-                icono.setImage(new Image(Objects.requireNonNull(getClass().getResource(RutasConstantes.FURGONETA)).toExternalForm()));
+                icono.setImage(RutasConstantesImagenes.loadImage(RutasConstantesImagenes.FURGONETA));
 
             } else if (tipoVehiculo == TipoVehiculo.AUTOBUS) {
-                icono.setImage(new Image(Objects.requireNonNull(getClass().getResource(RutasConstantes.AUTOBUS)).toExternalForm()));
+                icono.setImage(RutasConstantesImagenes.loadImage(RutasConstantesImagenes.AUTOBUS));
             }
 
             icono.setFitHeight(30);

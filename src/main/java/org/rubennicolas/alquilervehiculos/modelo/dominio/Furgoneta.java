@@ -24,10 +24,8 @@ public class Furgoneta extends Vehiculo {
     }
 
     public Furgoneta(Furgoneta furgoneta) {
-
-        super(furgoneta.getMarca(), furgoneta.getModelo(), furgoneta.getMatricula());
-        setPlazas(furgoneta.getPlazas());
-        setPma(furgoneta.getPma());
+        this(furgoneta.getMarca(), furgoneta.getModelo(), furgoneta.getMatricula(), furgoneta.getPlazas(), furgoneta.getPma());
+        this.tipoVehiculo = TipoVehiculo.FURGONETA;
     }
 
     public int getPma() {
@@ -59,6 +57,11 @@ public class Furgoneta extends Vehiculo {
             throw new IllegalArgumentException("El número de plazas no es correcto. Debe estar entre 1 y 10.");
         }
         this.plazas = plazas;
+    }
+
+    @Override
+    public Vehiculo clonar() {
+        return new Furgoneta(this);
     }
 
     @Override
