@@ -2,9 +2,9 @@ name: 🧪 Run Tests (Alquiler Vehículos Java)
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [master]
   pull_request:
-    branches: [ "master" ]
+    branches: [master]
 
 jobs:
   test:
@@ -13,45 +13,41 @@ jobs:
     services:
       mysql:
         image: mysql:8.0
+        ports:
+          - 3306:3306
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: alquiler_vehiculos_test
-        ports:
-          - 3306:3306
         options: >-
           --health-cmd="mysqladmin ping -h localhost"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=3
 
       mongo:
-        image: mongo:6.0
+        image: mongo:6.0.14
         ports:
           - 27017:27017
         options: >-
-          --health-cmd="mongo --eval 'db.runCommand({ ping: 1 })'"
+          --health-cmd="mongosh --eval 'db.adminCommand(\"ping\")'"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
 
     steps:
-      - name: 📥 Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: ☕ Set up JDK 21
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
-          cache: maven
 
-      - name: 🧱 Verify Docker availability
-        run: docker --version
+      - name: Wait for containers
+        run: |
+          echo "Esperando 20 segundos para que Mongo y MySQL estén listos..."
+          sleep 20
 
-      - name: 🧪 Run Maven Tests (with Docker)
-        env:
-          MYSQL_HOST: localhost
-          MYSQL_PORT: 3306
-          MONGO_HOST: localhost
-          MONGO_PORT: 27017
-        run: mvn -B test --file pom.xml
+      - name: Run Maven Tests
+        run: mvn clean test
