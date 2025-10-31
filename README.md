@@ -1,6 +1,6 @@
 # 🚗 Alquiler de Vehículos - JavaFX
-[![Build Status](https://github.com/rubennicolasdiaz/spring-boot-email/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/rubennicolasdiaz/spring-boot-email/actions/workflows/build.yml)
-[![Tests](https://img.shields.io/github/actions/workflow/status/rubennicolasdiaz/spring-boot-email/tests.yml?label=Tests&logo=pytest&logoColor=white)](https://github.com/rubennicolasdiaz/spring-boot-email/actions)
+[![Build Status](https://github.com/rubennicolasdiaz/Alquiler_Vehiculos_Java_FX/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/rubennicolasdiaz/Alquiler_Vehiculos_Java_FX/actions/workflows/build.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/rubennicolasdiaz/Alquiler_Vehiculos_Java_FX/tests.yml?label=Tests&logo=pytest&logoColor=white)](https://github.com/rubennicolasdiaz/Alquiler_Vehiculos_Java_FX/actions)
 ![Java](https://img.shields.io/badge/Java-21-blue?logo=openjdk)
 ![JavaFX](https://img.shields.io/badge/JavaFX-21-blueviolet?logo=java)
 ![MySQL](https://img.shields.io/badge/MySQL-Supported-orange?logo=mysql)

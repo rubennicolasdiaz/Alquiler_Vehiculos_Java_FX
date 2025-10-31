@@ -1,5 +1,5 @@
 # Imagen base con soporte completo para JavaFX y Swing
-FROM bellsoft/liberica-openjdk-debian:21-fx
+FROM bellsoft/liberica-openjfx:21
 
 # Carpeta de trabajo
 WORKDIR /app
