@@ -1,6 +1,6 @@
 # Imagen base con soporte completo para JavaFX y Swing
 FROM bellsoft/liberica-openjfx:21
-=======
+
 # ================================================
 # 🏗️ Etapa 1: Build del proyecto con Maven
 # ================================================
