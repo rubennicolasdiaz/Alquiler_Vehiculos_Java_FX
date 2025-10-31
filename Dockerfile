@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Imagen base con soporte completo para JavaFX y Swing
 FROM bellsoft/liberica-openjfx:21
 =======
@@ -26,7 +25,6 @@ FROM eclipse-temurin:21-jdk
 
 # Instalar OpenJFX (necesario para apps JavaFX)
 RUN apt-get update && apt-get install -y openjfx && rm -rf /var/lib/apt/lists/*
->>>>>>> ff48c9041609f5663d5dcc0b3ad96d0129e8dea2
 
 # Carpeta de trabajo
 WORKDIR /app
